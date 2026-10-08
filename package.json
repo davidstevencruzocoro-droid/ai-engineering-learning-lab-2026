@@ -1,0 +1,26 @@
+{
+  "name": "ai-engineering-learning-lab-2026",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "content:build": "node scripts/build-content.js",
+    "predev": "npm run content:build",
+    "dev": "vite",
+    "prebuild": "npm run content:build",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "prepdf": "npm run content:build",
+    "pdf": "node scripts/generate-pdf.js",
+    "validate": "node scripts/validate-content.js",
+    "pretest": "npm run content:build",
+    "test": "node --test",
+    "test:e2e": "playwright test --config=playwright.config.js",
+    "lab:sandbox:build": "docker build --tag ai-lab-sandbox:local sandbox",
+    "lab:server": "node server/index.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "pdfkit": "^0.15.1",
+    "vite": "^8.3.4"
+  }
+}
