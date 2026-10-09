@@ -1,0 +1,126 @@
+// Autocalificación: combina el código del estudiante con un arnés de pruebas oculto
+// y lo ejecuta en el MISMO sandbox que /api/run (sin tocar runner.py ni el Dockerfile).
+// El arnés nunca se expone al cliente: solo vive aquí, en el proceso del servidor.
+
+const JS_CIRCUIT_BREAKER_HARNESS = `
+async function __runGrading() {
+  const results = [];
+  const record = (name, pass, detail) => { results.push({ name, pass: Boolean(pass), detail: detail || '' }); };
+
+  try {
+    const cb = new CircuitBreaker(3, 60);
+    let intentosReales = 0;
+    const fallando = async () => { intentosReales++; throw new Error('fallo simulado'); };
+
+    for (let i = 0; i < 3; i++) {
+      try { await cb.ejecutar(fallando); } catch (e) {}
+    }
+    record('abre el circuito tras 3 fallos consecutivos', cb.estado === 'abierto', 'estado actual: ' + cb.estado);
+
+    const intentosAntesDeAbrir = intentosReales;
+    let rechazoSinLlamar = false;
+    try {
+      await cb.ejecutar(fallando);
+    } catch (e) {
+      rechazoSinLlamar = intentosReales === intentosAntesDeAbrir;
+    }
+    record('mientras está abierto, rechaza sin ejecutar la función real', rechazoSinLlamar);
+
+    await new Promise((r) => setTimeout(r, 90));
+    const exitosa = async () => 'ok';
+    let seRecupero = false;
+    try {
+      const salida = await cb.ejecutar(exitosa);
+      seRecupero = salida === 'ok' && cb.estado === 'cerrado';
+    } catch (e) {}
+    record('se recupera a "cerrado" tras una ejecución exitosa pasado el tiempo de espera', seRecupero, 'estado final: ' + cb.estado);
+  } catch (error) {
+    record('la clase CircuitBreaker existe y es instanciable con (umbralFallos, tiempoEsperaMs)', false, String((error && error.message) || error));
+  }
+
+  const passed = results.filter((r) => r.pass).length;
+  for (const r of results) console.log('GRADE_RESULT:' + JSON.stringify(r));
+  console.log('GRADE_SUMMARY:' + JSON.stringify({ passed, total: results.length }));
+}
+__runGrading();
+`;
+
+const SQL_TASKS_SCHEMA_HARNESS = `
+.print GRADE_CHECK:tabla_tasks_existe
+SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='tasks';
+.print GRADE_CHECK:columna_title_not_null
+SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='title' AND "notnull"=1;
+.print GRADE_CHECK:tiene_al_menos_dos_filas
+SELECT COUNT(*) FROM tasks;
+.print GRADE_CHECK:tiene_alguna_completada
+SELECT COUNT(*) FROM tasks WHERE completed = 1;
+`;
+
+const SQL_TASKS_CHECKS = [
+  { name: 'tabla_tasks_existe', label: 'La tabla "tasks" existe', expect: (v) => Number(v) >= 1 },
+  { name: 'columna_title_not_null', label: 'La columna "title" es NOT NULL', expect: (v) => Number(v) >= 1 },
+  { name: 'tiene_al_menos_dos_filas', label: 'Hay al menos 2 filas insertadas', expect: (v) => Number(v) >= 2 },
+  { name: 'tiene_alguna_completada', label: 'Al menos una fila tiene completed = 1', expect: (v) => Number(v) >= 1 }
+];
+
+function parseJsonGrading(stdout, expectedTotal) {
+  const results = [];
+  let summary = null;
+  for (const line of stdout.split(/\r?\n/)) {
+    if (line.startsWith('GRADE_RESULT:')) {
+      try { results.push(JSON.parse(line.slice('GRADE_RESULT:'.length))); } catch {}
+    } else if (line.startsWith('GRADE_SUMMARY:')) {
+      try { summary = JSON.parse(line.slice('GRADE_SUMMARY:'.length)); } catch {}
+    }
+  }
+  if (!summary) {
+    return { results: [], summary: { passed: 0, total: expectedTotal }, executionFailed: true };
+  }
+  return { results, summary };
+}
+
+function parseSqlGrading(stdout) {
+  const lines = stdout.split(/\r?\n/);
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^GRADE_CHECK:(.+)$/);
+    if (!match) continue;
+    const check = SQL_TASKS_CHECKS.find((c) => c.name === match[1]);
+    if (!check) continue;
+    const value = (lines[i + 1] ?? '').trim();
+    results.push({ name: check.label, pass: check.expect(value), detail: `valor observado: ${value || '(vacío)'}` });
+  }
+  if (results.length === 0) {
+    return { results: [], summary: { passed: 0, total: SQL_TASKS_CHECKS.length }, executionFailed: true };
+  }
+  const passed = results.filter((r) => r.pass).length;
+  return { results, summary: { passed, total: results.length } };
+}
+
+// Registro de ejercicios calificables. Añadir uno nuevo es: una entrada aquí + el runner ya existente.
+export const GRADABLE_EXERCISES = {
+  'lab-19': {
+    javascript: {
+      label: 'Circuit breaker (JavaScript)',
+      build: (studentSource) => `${studentSource}\n\n${JS_CIRCUIT_BREAKER_HARNESS}`,
+      parse: (stdout) => parseJsonGrading(stdout, 3)
+    }
+  },
+  'lab-04': {
+    sql: {
+      label: 'Esquema de tabla "tasks" (SQL)',
+      build: (studentSource) => `${studentSource}\n${SQL_TASKS_SCHEMA_HARNESS}`,
+      parse: (stdout) => parseSqlGrading(stdout)
+    }
+  }
+};
+
+export function getGradableExercise(labId, language) {
+  return GRADABLE_EXERCISES[labId]?.[language] || null;
+}
+
+export function listGradableExercises() {
+  return Object.entries(GRADABLE_EXERCISES).flatMap(([labId, byLanguage]) =>
+    Object.entries(byLanguage).map(([language, exercise]) => ({ labId, language, label: exercise.label }))
+  );
+}

@@ -829,6 +829,146 @@ const renderTerminalTutor = () => {
     .join('');
 };
 
+const initTerminalCoach = () => {
+  const commandSelect = document.querySelector('#coachCommandSelect');
+  const predictionInput = document.querySelector('#coachPrediction');
+  const runButton = document.querySelector('#coachRunBtn');
+  const guide = document.querySelector('#coachCommandGuide');
+  const status = document.querySelector('#coachStatus');
+  const resultPanel = document.querySelector('#coachResult');
+  const predictionReview = document.querySelector('#coachPredictionReview');
+  const output = document.querySelector('#coachCommandOutput');
+  const commonErrors = document.querySelector('#coachCommonErrors');
+  if (!commandSelect || !predictionInput || !runButton || !guide || !status || !resultPanel || !predictionReview || !output || !commonErrors) return;
+
+  let commands = [];
+  const selectedCommand = () => commands.find((command) => command.id === commandSelect.value);
+  const canRun = () => Boolean(selectedCommand() && predictionInput.value.trim() && predictionInput.value.length <= 500);
+  const renderGuide = () => {
+    const command = selectedCommand();
+    guide.replaceChildren();
+    if (!command) {
+      guide.textContent = 'Selecciona un diagnóstico del catálogo.';
+      runButton.disabled = true;
+      return;
+    }
+    const entries = [
+      ['Comando fijo', command.command],
+      ['Qué hace', command.what],
+      ['Cuándo usarlo', command.when],
+      ['Riesgo', command.risk],
+      ['Ejemplo', command.example],
+      ['Ejercicio', command.exercise],
+      ['Reto', command.challenge],
+      ['Recovery', command.recovery]
+    ];
+    for (const [label, value] of entries) {
+      const paragraph = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = `${label}: `;
+      paragraph.append(strong, document.createTextNode(value));
+      guide.append(paragraph);
+    }
+    runButton.disabled = !canRun();
+  };
+
+  commandSelect.addEventListener('change', () => {
+    resultPanel.hidden = true;
+    renderGuide();
+  });
+  predictionInput.addEventListener('input', () => {
+    runButton.disabled = !canRun();
+  });
+
+  runButton.addEventListener('click', async () => {
+    const command = selectedCommand();
+    const prediction = predictionInput.value.trim();
+    if (!command || !prediction || prediction.length > 500) {
+      status.textContent = 'Selecciona un comando y escribe una predicción de hasta 500 caracteres.';
+      return;
+    }
+
+    runButton.disabled = true;
+    status.textContent = 'Ejecutando únicamente el diagnóstico seleccionado...';
+    resultPanel.hidden = true;
+    try {
+      const response = await fetch('/api/terminal/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commandId: command.id, prediction })
+      });
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('No se encontró la API local. Inicia npm run lab:server y usa el sitio local de Vite.');
+      }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || `La API respondió HTTP ${response.status}.`);
+
+      predictionReview.textContent = `Tu predicción: “${result.prediction}”. ${result.verification}`;
+      output.textContent = [
+        `Comando: ${result.command}`,
+        `Disponible: ${result.available ? 'sí' : 'no'}`,
+        `Código de salida: ${result.exitCode ?? 'sin ejecutar'}`,
+        result.timedOut ? 'Tiempo límite: excedido' : '',
+        result.stdout ? `Salida:\n${result.stdout}` : '',
+        result.stderr ? `Error:\n${result.stderr}` : ''
+      ].filter(Boolean).join('\n\n');
+      commonErrors.replaceChildren();
+      const errorsHeading = document.createElement('p');
+      errorsHeading.textContent = 'Errores comunes y recuperación:';
+      const errorList = document.createElement('ul');
+      for (const error of result.teaching.commonErrors) {
+        const item = document.createElement('li');
+        item.textContent = error;
+        errorList.append(item);
+      }
+      const recovery = document.createElement('p');
+      recovery.textContent = `Recovery: ${result.teaching.recovery}`;
+      commonErrors.append(errorsHeading, errorList, recovery);
+      resultPanel.hidden = false;
+      status.textContent = result.available
+        ? 'Diagnóstico finalizado. Contrasta la salida real con tu predicción y el criterio de verificación.'
+        : 'La herramienta no está disponible; no se ejecutó ningún comando.';
+    } catch (error) {
+      status.textContent = `No se pudo ejecutar o verificar el diagnóstico: ${error.message}`;
+    } finally {
+      runButton.disabled = !canRun();
+    }
+  });
+
+  fetch('/api/terminal/commands')
+    .then(async (response) => {
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('No se encontró la API local. Inicia npm run lab:server y usa el sitio local de Vite.');
+      }
+      const catalog = await response.json();
+      if (!response.ok) throw new Error(catalog.error || `La API respondió HTTP ${response.status}.`);
+      if (!Array.isArray(catalog.commands) || catalog.commands.length === 0) {
+        throw new Error('La API no devolvió comandos de diagnóstico.');
+      }
+      commands = catalog.commands;
+      commandSelect.replaceChildren();
+      for (const command of commands) {
+        const option = document.createElement('option');
+        option.value = command.id;
+        option.textContent = command.label;
+        commandSelect.append(option);
+      }
+      commandSelect.disabled = false;
+      status.textContent = 'El catálogo usa comandos fijos de solo lectura. Las herramientas ausentes se reportan sin ejecutar el comando.';
+      renderGuide();
+    })
+    .catch((error) => {
+      commandSelect.replaceChildren();
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'Catálogo no disponible';
+      commandSelect.append(option);
+      status.textContent = `No se pudo cargar el Terminal Coach: ${error.message}`;
+    });
+};
+
 const renderNotes = () => {
   const notesArea = document.querySelector('#notesArea');
   if (!notesArea) return;
@@ -854,8 +994,15 @@ const initLabWorkbench = () => {
   const refreshButton = document.querySelector('#refreshEnvironmentBtn');
   const inventoryOutput = document.querySelector('#environmentInventoryOutput');
   const refreshInventoryButton = document.querySelector('#refreshEnvironmentDetailsBtn');
+  const gradingSelect = document.querySelector('#gradingExerciseSelect');
+  const gradingHelp = document.querySelector('#gradingExerciseHelp');
+  const gradeButton = document.querySelector('#gradeCodeBtn');
+  const gradingResult = document.querySelector('#gradingResult');
+  const gradingSummary = document.querySelector('#gradingSummary');
+  const gradingChecklist = document.querySelector('#gradingChecklist');
   const sourceByLanguage = new Map();
   let lastOutput = '';
+  let gradableExercises = [];
 
   if (!sourceArea || !languageSelect || !runButton || !environmentStatus || !inventoryOutput || !refreshInventoryButton) return;
   sourceArea.value = runnerStarters[languageSelect.value];
@@ -879,6 +1026,7 @@ const initLabWorkbench = () => {
       const mentorReady = health.ollama?.available && health.ollama?.modelReady;
       runButton.disabled = !dockerReady;
       mentorButton.disabled = !mentorReady;
+      if (gradeButton) gradeButton.disabled = !dockerReady || !gradingSelect?.value;
 
       const dockerStatus = !health.docker?.available
         ? `Docker no disponible${health.docker?.error ? `: ${health.docker.error}` : ''}.`
@@ -1041,10 +1189,72 @@ const initLabWorkbench = () => {
     }
   });
 
+  const loadGradableExercises = async () => {
+    if (!gradingSelect) return;
+    try {
+      const response = await fetch('/api/grading/exercises');
+      const data = await readApiResponse(response);
+      gradableExercises = data.exercises || [];
+      gradingSelect.innerHTML = '<option value="">Sin ejercicio calificado seleccionado</option>'
+        + gradableExercises.map((ex, i) => `<option value="${i}">${ex.label} (${ex.labId})</option>`).join('');
+    } catch (error) {
+      gradableExercises = [];
+    }
+  };
+
+  if (gradingSelect) {
+    gradingSelect.addEventListener('change', () => {
+      const exercise = gradableExercises[Number(gradingSelect.value)];
+      if (exercise && gradingHelp) {
+        gradingHelp.textContent = `Selecciona el lenguaje "${exercise.language}" arriba y escribe tu solución para ${exercise.labId}. Ver el enunciado completo en el detalle del laboratorio.`;
+        gradingHelp.hidden = false;
+      } else if (gradingHelp) {
+        gradingHelp.hidden = true;
+      }
+      gradingResult?.setAttribute('hidden', '');
+      checkEnvironment();
+    });
+  }
+
+  if (gradeButton) {
+    gradeButton.addEventListener('click', async () => {
+      const exercise = gradableExercises[Number(gradingSelect.value)];
+      if (!exercise) return;
+      gradeButton.disabled = true;
+      gradingResult.hidden = false;
+      gradingSummary.textContent = 'Calificando en el sandbox...';
+      gradingChecklist.innerHTML = '';
+      try {
+        const response = await fetch('/api/grade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ labId: exercise.labId, language: exercise.language, source: sourceArea.value })
+        });
+        const result = await readApiResponse(response);
+        if (result.executionFailed) {
+          gradingSummary.textContent = 'No se pudo evaluar: tu código no terminó de ejecutarse correctamente.';
+          gradingChecklist.innerHTML = `<li class="grade-fail">${(result.stderr || 'Revisa errores de sintaxis o de ejecución.').replace(/</g, '&lt;')}</li>`;
+        } else {
+          const { passed, total } = result.summary;
+          gradingSummary.textContent = `${passed}/${total} pruebas superadas`;
+          gradingChecklist.innerHTML = result.results
+            .map((r) => `<li class="${r.pass ? 'grade-pass' : 'grade-fail'}">${r.pass ? '✔' : '✘'} ${r.name}${r.detail ? ` — ${r.detail}` : ''}</li>`)
+            .join('');
+        }
+      } catch (error) {
+        gradingSummary.textContent = `No se pudo calificar: ${error.message}`;
+        gradingChecklist.innerHTML = '';
+      } finally {
+        await checkEnvironment();
+      }
+    });
+  }
+
   refreshButton.addEventListener('click', checkEnvironment);
   refreshInventoryButton.addEventListener('click', refreshEnvironmentInventory);
   checkEnvironment();
   refreshEnvironmentInventory();
+  loadGradableExercises();
 };
 
 const renderFilteredContent = () => {
@@ -1119,4 +1329,5 @@ document.addEventListener('DOMContentLoaded', () => {
   window.currentWeekId = window.currentWeekId ?? getDefaultWeekId();
   renderAll();
   initLabWorkbench();
+  initTerminalCoach();
 });

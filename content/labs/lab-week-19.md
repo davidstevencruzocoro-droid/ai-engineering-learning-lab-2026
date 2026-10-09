@@ -75,3 +75,16 @@ Logs mostrando la transición cerrado → abierto tras los fallos consecutivos, 
 
 ## Criterio de aprobación
 El sistema deja de llamar a una dependencia caída después de N fallos, responde rápido mientras está caída, y se recupera sola cuando la dependencia vuelve a estar disponible.
+
+## Ejercicio calificado
+Disponible en la consola de práctica (sección "Calificar mi código"). Implementa en JavaScript una clase `CircuitBreaker` con exactamente esta interfaz:
+
+```javascript
+class CircuitBreaker {
+  constructor(umbralFallos, tiempoEsperaMs) { /* ... */ }
+  async ejecutar(funcion) { /* ... */ }
+  // this.estado debe valer 'cerrado' | 'abierto' | 'semi-abierto'
+}
+```
+
+El corrector automático verifica, ejecutando tu clase de verdad (no leyendo el código): que el circuito se abre tras 3 fallos consecutivos, que mientras está abierto rechaza sin llamar a la función real, y que se recupera a "cerrado" tras una ejecución exitosa pasado el tiempo de espera. Los tests exactos son ocultos a propósito — se diseñaron para verificar comportamiento, no una implementación específica.

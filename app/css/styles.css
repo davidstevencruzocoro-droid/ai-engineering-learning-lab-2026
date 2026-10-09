@@ -683,6 +683,46 @@ textarea {
   background: rgba(15, 23, 42, 0.58);
 }
 
+.terminal-coach-card {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.coach-command-guide,
+.coach-result {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  line-height: 1.55;
+}
+
+.coach-command-guide p,
+.coach-result p,
+.coach-result h3 {
+  margin: 0 0 8px;
+}
+
+.coach-command-guide p:last-child,
+.coach-result p:last-child {
+  margin-bottom: 0;
+}
+
+.coach-result pre {
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .workbench-card h3,
 .workbench-help {
   margin: 0;
@@ -1218,4 +1258,29 @@ textarea {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   overflow-x: auto;
+}
+
+.grading-result {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(11, 16, 32, 0.76);
+}
+
+.grading-result ul {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.grade-pass {
+  color: var(--success);
+}
+
+.grade-fail {
+  color: var(--danger);
 }

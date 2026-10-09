@@ -172,6 +172,19 @@
                 <strong>Salida</strong>
                 <pre id="runnerOutput">La salida y los errores aparecerán aquí.</pre>
               </div>
+
+              <label class="workbench-field" for="gradingExerciseSelect">
+                <span>Calificar mi código (opcional)</span>
+                <select id="gradingExerciseSelect">
+                  <option value="">Sin ejercicio calificado seleccionado</option>
+                </select>
+              </label>
+              <p id="gradingExerciseHelp" class="workbench-help" hidden></p>
+              <button id="gradeCodeBtn" class="secondary-btn" type="button" disabled>Calificar mi código</button>
+              <div id="gradingResult" class="grading-result" role="status" aria-live="polite" hidden>
+                <strong id="gradingSummary"></strong>
+                <ul id="gradingChecklist"></ul>
+              </div>
             </section>
             <section class="workbench-card" aria-labelledby="mentor-title">
               <h3 id="mentor-title">Mentor Ollama</h3>
@@ -194,9 +207,30 @@
 
         <section class="panel" id="terminal-tutor">
           <div class="panel-header">
-            <h2>Terminal Tutor</h2>
+            <h2>Terminal Coach · Terminal Tutor</h2>
           </div>
-          <p class="panel-subtitle">Comandos reales explicados: qué hacen, cuándo usarlos, sus riesgos y cómo recuperarte si algo sale mal. El de mayor riesgo incluye una simulación segura para practicar sin arriesgar un proyecto real.</p>
+          <p class="panel-subtitle">Predice, ejecuta un diagnóstico de solo lectura y contrasta el resultado real. No acepta comandos libres ni modifica archivos, proyectos o servicios.</p>
+          <div class="terminal-coach-card">
+            <label class="workbench-field" for="coachCommandSelect">
+              <span>Diagnóstico permitido</span>
+              <select id="coachCommandSelect" disabled>
+                <option value="">Cargando catálogo...</option>
+              </select>
+            </label>
+            <div id="coachCommandGuide" class="coach-command-guide" aria-live="polite">Consultando los comandos compatibles con este equipo...</div>
+            <label class="workbench-field" for="coachPrediction">
+              <span>ANTES · ¿Qué esperas encontrar?</span>
+              <textarea id="coachPrediction" rows="2" maxlength="500" placeholder="Escribe una predicción antes de ejecutar el diagnóstico."></textarea>
+            </label>
+            <button id="coachRunBtn" class="primary-btn" type="button" disabled>Ejecutar y verificar</button>
+            <section id="coachResult" class="coach-result" aria-live="polite" hidden>
+              <h3>DESPUÉS · Resultado y verificación</h3>
+              <p id="coachPredictionReview"></p>
+              <pre id="coachCommandOutput"></pre>
+              <div id="coachCommonErrors"></div>
+            </section>
+            <p id="coachStatus" class="workbench-help" role="status">Los diagnósticos disponibles aparecen según las herramientas detectadas.</p>
+          </div>
           <div id="terminalTutorList" class="milestone-grid" aria-live="polite"></div>
         </section>
 

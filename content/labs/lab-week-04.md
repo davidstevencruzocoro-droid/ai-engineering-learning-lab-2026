@@ -50,3 +50,18 @@ Captura de la tabla, consulta de inserción y resultados de lectura.
 
 ## Criterio de aprobación
 La aplicación guarda y recupera datos de forma consistente con integridad mínima.
+
+## Ejercicio calificado
+Disponible en la consola de práctica (sección "Calificar mi código", lenguaje SQL/SQLite). Escribe SQL que, al ejecutarse en SQLite:
+
+```sql
+CREATE TABLE tasks (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  completed BOOLEAN DEFAULT 0
+);
+INSERT INTO tasks (title, completed) VALUES ('ejemplo', 0);
+INSERT INTO tasks (title, completed) VALUES ('otro ejemplo', 1);
+```
+
+El corrector verifica, consultando la base real tras ejecutar tu SQL: que la tabla `tasks` existe, que la columna `title` es `NOT NULL`, que hay al menos 2 filas, y que al menos una tiene `completed = 1`. Nota: el perfil SQL del sandbox es SQLite, no MySQL — usa `INTEGER PRIMARY KEY` en vez de `AUTO_INCREMENT`.

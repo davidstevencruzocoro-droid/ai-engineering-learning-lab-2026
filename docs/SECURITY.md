@@ -76,4 +76,11 @@ La app publicada en GitHub Pages es estática: no puede ejecutar procesos locale
 - El proceso solo consulta una lista fija de comandos de diagnóstico conocidos. Los argumentos no proceden del navegador; no hay endpoint de shell ni ejecución arbitraria.
 - Se enumeran versiones, estado de servicios, contenedores activos, sockets en escucha, extensiones de VS Code y marcadores de proyecto del workspace actual con profundidad máxima de una carpeta. No se leen archivos fuente ni se recorre el perfil del usuario.
 - Los nombres de proyectos, procesos, contenedores, extensiones y puertos pueden ser sensibles. Permanecen en la respuesta local y la UI no los comparte con Ollama. Revisa y redacta [ENVIRONMENT.md](ENVIRONMENT.md) antes de publicar un snapshot.
+
+### Terminal Coach
+
+- `GET /api/terminal/commands` expone una allowlist fija con descripción pedagógica; `POST /api/terminal/run` acepta solo un `commandId` de esa lista y una predicción de hasta 500 caracteres.
+- El cliente nunca proporciona ejecutable, argumentos, directorio de trabajo ni shell. El backend resuelve exclusivamente los ejecutables definidos en el catálogo y los inicia con argumentos constantes, `shell: false`, timeout de 8 segundos y salida limitada a 8 KB.
+- Las prácticas solo consultan versiones de herramientas, contenedores activos, distribuciones WSL y modelos Ollama. Si no se encuentra una herramienta, no se ejecuta el comando y se devuelve un diagnóstico explícito.
+- No hay shell libre ni comandos mutativos en este endpoint. El rate limit de la API local se aplica también a las ejecuciones del coach. La predicción es material didáctico, no una entrada de comando.
 - La detección es orientativa: un ejecutable en `PATH` no prueba que una base de datos esté accesible; una extensión de IDE no instala su CLI, y un alias de Microsoft Store no cuenta como runtime de Python.

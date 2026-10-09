@@ -116,3 +116,26 @@ test('el inventario local devuelve el resultado del proveedor sin exponerlo a se
     });
   }
 });
+
+test('el Terminal Coach publica un catálogo fijo y rechaza comandos fuera de allowlist', async () => {
+  const catalogResponse = await fetch(`${baseUrl}/api/terminal/commands`);
+  assert.equal(catalogResponse.status, 200);
+  const catalog = await catalogResponse.json();
+  assert.ok(catalog.commands.some((command) => command.id === 'git-version'));
+
+  const missingPrediction = await fetch(`${baseUrl}/api/terminal/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ commandId: 'git-version', prediction: ' ' })
+  });
+  assert.equal(missingPrediction.status, 400);
+  assert.match((await missingPrediction.json()).error, /Escribe primero/);
+
+  const arbitraryCommand = await fetch(`${baseUrl}/api/terminal/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ commandId: 'arbitrary', command: 'whoami', prediction: 'espero un usuario' })
+  });
+  assert.equal(arbitraryCommand.status, 400);
+  assert.match((await arbitraryCommand.json()).error, /catálogo/);
+});

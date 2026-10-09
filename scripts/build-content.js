@@ -99,6 +99,7 @@ function buildLabs() {
       penalty: sectionToText(pick(s, 'penalizacion xp')),
       evidence: sectionToText(pick(s, 'evidencia')),
       criteria: sectionToText(pick(s, 'criterio de aprobacion')),
+      gradedExercise: pick(s, 'ejercicio calificado'),
       type: 'laboratorio',
       source: `content/labs/${file}`,
       pending: false

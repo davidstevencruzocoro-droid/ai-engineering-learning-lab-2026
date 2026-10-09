@@ -4,12 +4,18 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { getEnvironmentSnapshot } from './environment.mjs';
 import {
+  executeCoachCommand,
+  getCoachCommandCatalog
+} from './terminal-coach.mjs';
+import {
   buildDockerArgs,
   LANGUAGE_PROFILES,
   SANDBOX_IMAGE,
+  validateGradePayload,
   validateMentorPayload,
   validateRunPayload
 } from './security.mjs';
+import { getGradableExercise, listGradableExercises } from './grading.mjs';
 
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.LAB_SERVER_PORT || 4176);
@@ -169,8 +175,7 @@ function checkRateLimit(key, limit) {
   return bucket.count <= limit;
 }
 
-async function executeCode(payload) {
-  const { language, source } = validateRunPayload(payload);
+async function runSandbox(language, source) {
   if (activeRuns.size >= MAX_CONCURRENT_RUNS) {
     const error = new Error('El runner está ocupado. Espera a que termine una ejecución activa.');
     error.statusCode = 429;
@@ -247,6 +252,34 @@ async function executeCode(payload) {
   } finally {
     activeRuns.delete(containerName);
   }
+}
+
+async function executeCode(payload) {
+  const { language, source } = validateRunPayload(payload);
+  return runSandbox(language, source);
+}
+
+async function gradeCode(payload) {
+  const { labId, language, source } = validateGradePayload(payload);
+  const exercise = getGradableExercise(labId, language);
+  if (!exercise) {
+    const error = new Error(`No hay ejercicio calificado para ${labId} en ${LANGUAGE_PROFILES[language] || language}.`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const combinedSource = exercise.build(source);
+  const execution = await runSandbox(language, combinedSource);
+  const graded = exercise.parse(execution.stdout);
+
+  return {
+    label: exercise.label,
+    results: graded.results,
+    summary: graded.summary,
+    executionFailed: Boolean(graded.executionFailed),
+    stderr: graded.executionFailed ? execution.stderr.slice(0, 2_000) : '',
+    timedOut: execution.timedOut
+  };
 }
 
 async function askMentor(payload) {
@@ -329,13 +362,24 @@ export function createServer({ environmentProvider = getEnvironmentSnapshot } = 
       return;
     }
 
-    if (request.method !== 'POST' || !['/api/run', '/api/mentor'].includes(url.pathname)) {
+    if (request.method === 'GET' && url.pathname === '/api/grading/exercises') {
+      sendJson(response, 200, { exercises: listGradableExercises() }, origin);
+      return;
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/terminal/commands') {
+      sendJson(response, 200, { commands: getCoachCommandCatalog() }, origin);
+      return;
+    }
+
+    if (request.method !== 'POST' || !['/api/run', '/api/grade', '/api/mentor', '/api/terminal/run'].includes(url.pathname)) {
       sendJson(response, 404, { error: 'Ruta no encontrada.' }, origin);
       return;
     }
 
     const key = `${request.socket.remoteAddress}:${url.pathname}`;
-    if (!checkRateLimit(key, url.pathname === '/api/run' ? 12 : 20)) {
+    const limit = url.pathname === '/api/mentor' ? 20 : 12;
+    if (!checkRateLimit(key, limit)) {
       sendJson(response, 429, { error: 'Se alcanzó el límite temporal de solicitudes. Espera un minuto.' }, origin);
       return;
     }
@@ -348,6 +392,12 @@ export function createServer({ environmentProvider = getEnvironmentSnapshot } = 
       const payload = await readJson(request);
       if (url.pathname === '/api/run') {
         const result = await executeCode(payload);
+        sendJson(response, 200, result, origin);
+      } else if (url.pathname === '/api/grade') {
+        const result = await gradeCode(payload);
+        sendJson(response, 200, result, origin);
+      } else if (url.pathname === '/api/terminal/run') {
+        const result = await executeCoachCommand(payload);
         sendJson(response, 200, result, origin);
       } else {
         const answer = await askMentor(payload);

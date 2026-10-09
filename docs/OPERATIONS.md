@@ -30,6 +30,8 @@ Cada ejecución acepta código de un perfil permitido y crea un contenedor nuevo
 
 Al abrir la consola se consulta también `GET /api/environment`. El sondeo usa herramientas de una lista fija y operaciones de lectura; tiene timeout y límite de salida por proceso. Solo enumera proyectos del workspace actual y sus carpetas inmediatas, no recorre el perfil del usuario ni lee contenido de código. La UI muestra puertos, procesos, extensiones y nombres de contenedores localmente; esos datos no se envían al mentor automáticamente. Consulta [ENVIRONMENT.md](ENVIRONMENT.md) para el snapshot y para distinguir un CLI ausente de una integración disponible en un contenedor.
 
+La sección “Terminal Coach · Terminal Tutor” obtiene su catálogo fijo desde `GET /api/terminal/commands`. Para ejecutar una práctica escribe primero una predicción; luego el navegador envía solo el identificador del catálogo a `POST /api/terminal/run`. Los diagnósticos disponibles son comandos acotados de lectura (versiones, lista de contenedores, distribuciones WSL y modelos Ollama), con límite de 8 segundos y salida de 8 KB. Si una herramienta no está instalada, la API lo informa sin ejecutarla. La UI compara la predicción con la salida y muestra criterio de verificación, errores comunes y recovery. No se acepta texto de comando ni se modifican archivos, contenedores, bases de datos o servicios.
+
 ## 1. Principio general
 
 Un sistema "funciona en mi máquina" no está operado — está encendido por accidente. Operar significa que el sistema sigue funcionando, es diagnosticable y es recuperable cuando tú no estás mirando.

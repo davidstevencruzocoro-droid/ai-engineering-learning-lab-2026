@@ -74,6 +74,29 @@ export function validateMentorPayload(payload) {
   return messages;
 }
 
+export function validateGradePayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new TypeError('El cuerpo debe ser un objeto JSON.');
+  }
+  if (typeof payload.labId !== 'string' || !/^[a-z0-9-]{1,40}$/.test(payload.labId)) {
+    throw new TypeError('labId inválido.');
+  }
+  if (!Object.hasOwn(LANGUAGE_PROFILES, payload.language)) {
+    throw new RangeError('Lenguaje no permitido.');
+  }
+  if (typeof payload.source !== 'string' || payload.source.trim().length === 0) {
+    throw new TypeError('Escribe código antes de enviarlo a calificar.');
+  }
+  if (payload.source.length > MAX_SOURCE_LENGTH) {
+    throw new RangeError(`El código supera el límite de ${MAX_SOURCE_LENGTH} caracteres.`);
+  }
+  if (payload.source.includes('\0')) {
+    throw new TypeError('El código contiene caracteres no permitidos.');
+  }
+
+  return { labId: payload.labId, language: payload.language, source: payload.source };
+}
+
 export function buildDockerArgs(language, containerName) {
   if (!Object.hasOwn(LANGUAGE_PROFILES, language)) {
     throw new RangeError('Lenguaje no permitido.');

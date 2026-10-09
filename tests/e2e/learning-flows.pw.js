@@ -19,6 +19,24 @@ test.beforeEach(async ({ page }) => {
       scope: 'Solo el workspace actual.'
     }
   }));
+  await page.route('**/api/terminal/commands', (route) => route.fulfill({
+    json: {
+      commands: [{
+        id: 'git-version',
+        label: 'Versión de Git',
+        command: 'git --version',
+        what: 'Muestra la versión de Git.',
+        when: 'Antes de usar Git.',
+        risk: 'Solo consulta la versión.',
+        example: 'git --version',
+        exercise: 'Compara la versión.',
+        commonErrors: ['Git no está instalado.'],
+        recovery: 'Instala Git desde la fuente oficial.',
+        challenge: 'Confirma la versión.',
+        verification: 'La salida indica la versión.'
+      }]
+    }
+  }));
   await page.goto('/');
   await page.evaluate(() => localStorage.removeItem('ai-lab-progress-v1'));
   await page.reload();
@@ -86,6 +104,45 @@ test('las guías de entrenamiento están disponibles sin provocar overflow móvi
     () => document.documentElement.scrollWidth > window.innerWidth
   );
   expect(hasHorizontalOverflow).toBe(false);
+});
+
+test('Terminal Coach exige una predicción antes de ejecutar y compara el resultado real', async ({ page }) => {
+  let runCount = 0;
+  await page.route('**/api/terminal/run', async (route) => {
+    runCount += 1;
+    expect(route.request().postDataJSON()).toEqual({
+      commandId: 'git-version',
+      prediction: 'Espero Git 2.x'
+    });
+    await route.fulfill({
+      json: {
+        commandId: 'git-version',
+        command: 'git --version',
+        prediction: 'Espero Git 2.x',
+        available: true,
+        exitCode: 0,
+        stdout: 'git version 2.55.0.windows.1',
+        stderr: '',
+        timedOut: false,
+        verification: 'La salida indica la versión.',
+        teaching: {
+          commonErrors: ['Git no está instalado.'],
+          recovery: 'Instala Git desde la fuente oficial.'
+        }
+      }
+    });
+  });
+
+  const runButton = page.locator('#coachRunBtn');
+  await expect(runButton).toBeDisabled();
+  await page.locator('#coachPrediction').fill('Espero Git 2.x');
+  await expect(runButton).toBeEnabled();
+  await runButton.click();
+  await expect(page.locator('#coachResult')).toBeVisible();
+  await expect(page.locator('#coachCommandOutput')).toContainText('git version 2.55.0.windows.1');
+  await expect(page.locator('#coachPredictionReview')).toContainText('La salida indica la versión.');
+  await expect(page.locator('#coachCommonErrors')).toContainText('Git no está instalado.');
+  expect(runCount).toBe(1);
 });
 
 test('el runner presenta el lenguaje y la salida como texto, sin evaluar respuestas HTML', async ({ page }) => {
