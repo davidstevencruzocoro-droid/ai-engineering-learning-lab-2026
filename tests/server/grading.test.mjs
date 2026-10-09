@@ -6,8 +6,27 @@ test('el registro expone exactamente los ejercicios calificables definidos', () 
   const exercises = listGradableExercises();
   assert.deepEqual(
     exercises.map((e) => `${e.labId}:${e.language}`).sort(),
-    ['lab-04:sql', 'lab-19:javascript']
+    ['lab-04:sql', 'lab-06:javascript', 'lab-19:javascript']
   );
+});
+
+test('build() del ejercicio lab-06 (break the system) añade el arnés tras el código del estudiante', () => {
+  const exercise = getGradableExercise('lab-06', 'javascript');
+  const combined = exercise.build('function validarPedido(p) { return { valido: true, errores: [] }; }');
+  assert.ok(combined.startsWith('function validarPedido'));
+  assert.match(combined, /__runGrading/);
+});
+
+test('parse() del ejercicio lab-06 detecta cuando una solución con bugs falla varios checks', () => {
+  const exercise = getGradableExercise('lab-06', 'javascript');
+  const stdout = [
+    'GRADE_RESULT:' + JSON.stringify({ name: 'un pedido válido se marca como válido', pass: false, detail: '' }),
+    'GRADE_RESULT:' + JSON.stringify({ name: 'cantidad 0 se reporta como inválida', pass: false, detail: '' }),
+    'GRADE_SUMMARY:' + JSON.stringify({ passed: 0, total: 2 })
+  ].join('\n');
+  const graded = exercise.parse(stdout);
+  assert.equal(graded.summary.passed, 0);
+  assert.ok(graded.results.every((r) => r.pass === false));
 });
 
 test('getGradableExercise devuelve null para combinaciones sin arnés', () => {

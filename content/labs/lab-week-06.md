@@ -46,3 +46,20 @@ Guardar la salida de testing, nombres de pruebas y casos cubiertos.
 
 ## Criterio de aprobación
 La suite valida negativamente y positivamente los flujos principales sin ambigüedad.
+
+## Ejercicio calificado
+Disponible en la consola de práctica (sección "Calificar mi código", lenguaje JavaScript). Es un ejercicio "Break the system": el código de partida ya tiene bugs plantados a propósito. Tu tarea es encontrarlos y corregirlos, no escribir desde cero.
+
+Código de partida (cópialo tal cual en el editor y arréglalo):
+
+```javascript
+function validarPedido(pedido) {
+  const errores = [];
+  if (!pedido.producto) errores.push('falta producto');
+  if (pedido.cantidad > 0) errores.push('cantidad invalida');
+  if (pedido.cliente.length === 0) errores.push('falta cliente');
+  return { valido: errores.length === 0, errores };
+}
+```
+
+Debe cumplir el contrato: `validarPedido(pedido)` devuelve `{ valido: boolean, errores: string[] }`. El corrector automático verifica, ejecutando tu función de verdad: que un pedido completo y válido se acepte, que una cantidad de 0 o menor se rechace, que un pedido sin `cliente` no haga que la función lance una excepción, y que falte `producto` se detecte. Los bugs plantados son exactamente del tipo "Break the system" de este laboratorio: una condición invertida y un acceso a una propiedad que puede no existir.

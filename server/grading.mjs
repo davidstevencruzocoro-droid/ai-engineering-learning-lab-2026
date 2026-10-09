@@ -97,6 +97,41 @@ function parseSqlGrading(stdout) {
   return { results, summary: { passed, total: results.length } };
 }
 
+// BREAK THE SYSTEM: el estudiante recibe código con bugs plantados (ver el enunciado
+// público en content/labs/lab-week-06.md) y debe corregirlo. Mismo mecanismo de
+// calificación que el resto — "romper y arreglar" es una cuestión de contenido, no
+// de infraestructura nueva: no se simulan fallos reales del sistema del usuario.
+const JS_ORDER_VALIDATOR_HARNESS = `
+async function __runGrading() {
+  const results = [];
+  const record = (name, pass, detail) => { results.push({ name, pass: Boolean(pass), detail: detail || '' }); };
+
+  try {
+    const r1 = validarPedido({ producto: 'Teclado', cantidad: 2, cliente: 'Ana' });
+    record('un pedido válido se marca como válido', Boolean(r1) && r1.valido === true, 'resultado: ' + JSON.stringify(r1));
+
+    const r2 = validarPedido({ producto: 'Mouse', cantidad: 0, cliente: 'Ana' });
+    record('cantidad 0 se reporta como inválida', Boolean(r2) && r2.valido === false && Array.isArray(r2.errores) && r2.errores.includes('cantidad invalida'), 'resultado: ' + JSON.stringify(r2));
+
+    let threw = false;
+    let r3;
+    try { r3 = validarPedido({ producto: 'Mouse', cantidad: 1 }); } catch (e) { threw = true; }
+    record('un pedido sin cliente no lanza una excepción', !threw, threw ? 'lanzó una excepción' : ('resultado: ' + JSON.stringify(r3)));
+    record('un pedido sin cliente se reporta inválido con el motivo correcto', !threw && Boolean(r3) && r3.valido === false && Array.isArray(r3.errores) && r3.errores.includes('falta cliente'), threw ? 'no aplica: lanzó excepción' : ('resultado: ' + JSON.stringify(r3)));
+
+    const r4 = validarPedido({ cantidad: 1, cliente: 'Ana' });
+    record('un pedido sin producto se reporta como inválido', Boolean(r4) && r4.valido === false && Array.isArray(r4.errores) && r4.errores.includes('falta producto'), 'resultado: ' + JSON.stringify(r4));
+  } catch (error) {
+    record('la función validarPedido existe y es invocable con (pedido)', false, String((error && error.message) || error));
+  }
+
+  const passed = results.filter((r) => r.pass).length;
+  for (const r of results) console.log('GRADE_RESULT:' + JSON.stringify(r));
+  console.log('GRADE_SUMMARY:' + JSON.stringify({ passed, total: results.length }));
+}
+__runGrading();
+`;
+
 // Registro de ejercicios calificables. Añadir uno nuevo es: una entrada aquí + el runner ya existente.
 export const GRADABLE_EXERCISES = {
   'lab-19': {
@@ -111,6 +146,13 @@ export const GRADABLE_EXERCISES = {
       label: 'Esquema de tabla "tasks" (SQL)',
       build: (studentSource) => `${studentSource}\n${SQL_TASKS_SCHEMA_HARNESS}`,
       parse: (stdout) => parseSqlGrading(stdout)
+    }
+  },
+  'lab-06': {
+    javascript: {
+      label: 'Break the system: corrige validarPedido (JavaScript)',
+      build: (studentSource) => `${studentSource}\n\n${JS_ORDER_VALIDATOR_HARNESS}`,
+      parse: (stdout) => parseJsonGrading(stdout, 5)
     }
   }
 };
