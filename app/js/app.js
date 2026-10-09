@@ -77,11 +77,38 @@ const getProgress = () => {
         }
       }
     }
+    const savedGradingAttempts = saved?.gradingAttempts;
+    const gradingAttempts = {};
+    if (savedGradingAttempts !== undefined) {
+      if (!savedGradingAttempts || typeof savedGradingAttempts !== 'object' || Array.isArray(savedGradingAttempts)) {
+        console.warn('Se ignoró el registro local de calificación porque no tiene un formato válido.');
+      } else {
+        for (const [key, attempt] of Object.entries(savedGradingAttempts)) {
+          const valid = attempt
+            && typeof attempt === 'object'
+            && typeof attempt.labId === 'string'
+            && typeof attempt.language === 'string'
+            && Number.isInteger(attempt.attempts)
+            && typeof attempt.resolved === 'boolean'
+            && Array.isArray(attempt.failingChecks);
+          if (valid) {
+            gradingAttempts[key] = {
+              ...attempt,
+              failingChecks: attempt.failingChecks.filter((name) => typeof name === 'string')
+            };
+          } else {
+            console.warn(`Se ignoró el intento de calificación local no válido para ${key}.`);
+          }
+        }
+      }
+    }
+
     return {
       ...defaultProgress,
       ...saved,
       labHelpLevels,
       projectStatuses,
+      gradingAttempts,
       completedCareerItems: Array.isArray(saved?.completedCareerItems)
         ? [...new Set(saved.completedCareerItems.filter((item) => typeof item === 'string'))]
         : []

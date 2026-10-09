@@ -81,18 +81,25 @@ function parseJsonGrading(stdout, expectedTotal) {
 
 function parseSqlGrading(stdout) {
   const lines = stdout.split(/\r?\n/);
-  const results = [];
+  // Mapa por nombre de check, no un array: si el código del estudiante imprime por su cuenta
+  // una línea "GRADE_CHECK:<nombre>" (a propósito o por accidente, p.ej. copiando el enunciado),
+  // el arnés real se añade SIEMPRE después y debe ser la fuente de verdad — se queda con la
+  // última ocurrencia de cada nombre, nunca con un conteo acumulado de apariciones.
+  const byName = new Map();
   for (let i = 0; i < lines.length; i++) {
     const match = lines[i].match(/^GRADE_CHECK:(.+)$/);
     if (!match) continue;
     const check = SQL_TASKS_CHECKS.find((c) => c.name === match[1]);
     if (!check) continue;
     const value = (lines[i + 1] ?? '').trim();
-    results.push({ name: check.label, pass: check.expect(value), detail: `valor observado: ${value || '(vacío)'}` });
+    byName.set(check.name, { name: check.label, pass: check.expect(value), detail: `valor observado: ${value || '(vacío)'}` });
   }
-  if (results.length === 0) {
+
+  if (byName.size === 0) {
     return { results: [], summary: { passed: 0, total: SQL_TASKS_CHECKS.length }, executionFailed: true };
   }
+  // Se reporta en el orden fijo del arnés, no en el orden de aparición en stdout.
+  const results = SQL_TASKS_CHECKS.filter((check) => byName.has(check.name)).map((check) => byName.get(check.name));
   const passed = results.filter((r) => r.pass).length;
   return { results, summary: { passed, total: results.length } };
 }

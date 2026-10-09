@@ -88,3 +88,25 @@ test('parse() del ejercicio lab-04 falla los checks cuyo valor no cumple el umbr
   const graded = exercise.parse(stdout);
   assert.equal(graded.results[0].pass, false);
 });
+
+test('parse() del ejercicio lab-04 no se deja inflar por un GRADE_CHECK falso previo al arnés real (regresión)', () => {
+  const exercise = getGradableExercise('lab-04', 'sql');
+  // Simula código que imprime marcas falsas de "aprobado" ANTES de que corra el arnés
+  // real (append tras el código del estudiante). El arnés real, al ejecutarse después,
+  // debe pisar el valor falso con el valor real para cada nombre de check.
+  const spoofedThenReal = [
+    'GRADE_CHECK:tabla_tasks_existe', '1',
+    'GRADE_CHECK:columna_title_not_null', '1',
+    'GRADE_CHECK:tiene_al_menos_dos_filas', '2',
+    'GRADE_CHECK:tiene_alguna_completada', '1',
+    'GRADE_CHECK:tabla_tasks_existe', '0',
+    'GRADE_CHECK:columna_title_not_null', '0'
+  ].join('\n');
+
+  const graded = exercise.parse(spoofedThenReal);
+  const byLabel = Object.fromEntries(graded.results.map((r) => [r.name, r.pass]));
+  assert.equal(byLabel['La tabla "tasks" existe'], false, 'el valor real (0) debe ganar sobre el falso (1)');
+  assert.equal(byLabel['La columna "title" es NOT NULL'], false, 'el valor real (0) debe ganar sobre el falso (1)');
+  // No debe haber entradas duplicadas por nombre.
+  assert.equal(graded.results.length, new Set(graded.results.map((r) => r.name)).size);
+});

@@ -38,11 +38,14 @@ function isAllowedOrigin(origin) {
   if (!origin) return true;
   try {
     const url = new URL(origin);
-    return (
-      url.protocol === 'http:' &&
-      ['localhost', '127.0.0.1'].includes(url.hostname) &&
-      ['4173', '4174', '5173', '5174'].includes(url.port)
-    );
+    // Cualquier puerto en localhost/127.0.0.1 por HTTP, no una lista fija: Vite incrementa
+    // el puerto automáticamente (5173, 5174, 5175...) cuando hay varias instancias corriendo
+    // a la vez, algo real y frecuente en este equipo con más de un agente/servidor activo.
+    // La barrera de seguridad real es isLoopback(request.socket.remoteAddress) en el handler
+    // principal, que ya exige que la conexión TCP venga de este mismo equipo; esta
+    // comprobación de Origin es una capa adicional contra un sitio remoto que intente
+    // falsificar el header Origin, y esa protección no depende de qué puerto se use.
+    return url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname);
   } catch {
     return false;
   }

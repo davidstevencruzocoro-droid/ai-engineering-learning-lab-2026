@@ -98,6 +98,31 @@ test('el servicio bloquea orígenes no locales y reporta errores de validación 
   assert.match((await invalid.json()).error, /Lenguaje no permitido/);
 });
 
+test('acepta cualquier puerto en localhost/127.0.0.1, no solo una lista fija (regresión: Vite incrementa de puerto)', async () => {
+  // Antes esto se rechazaba con 403 si Vite elegía un puerto fuera de [4173,4174,5173,5174],
+  // algo que ocurre de verdad cuando hay varias instancias de dev server activas a la vez.
+  const fromUnlistedPort = await fetch(`${baseUrl}/api/run`, {
+    method: 'POST',
+    headers: {
+      Origin: 'http://127.0.0.1:59999',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ language: 'bash', source: 'echo unsafe' })
+  });
+  // 400 (lenguaje inválido) y no 403 (origen rechazado) confirma que pasó el chequeo de origen.
+  assert.equal(fromUnlistedPort.status, 400);
+
+  const fromRemoteOrigin = await fetch(`${baseUrl}/api/run`, {
+    method: 'POST',
+    headers: {
+      Origin: 'https://attacker.example:5173',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ language: 'javascript', source: 'process.exit(0)' })
+  });
+  assert.equal(fromRemoteOrigin.status, 403, 'un hostname remoto debe seguir rechazándose sin importar el puerto');
+});
+
 test('el inventario local devuelve el resultado del proveedor sin exponerlo a servicios externos', async () => {
   const snapshot = {
     system: { platform: 'win32', version: '10.0', architecture: 'x64', terminal: 'PowerShell' },
