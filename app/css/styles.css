@@ -1314,3 +1314,38 @@ textarea {
   gap: 4px;
   font-size: 0.86rem;
 }
+
+/* Vistas modulares: una visible a la vez, controladas por el hash de la URL */
+.view[hidden] {
+  display: none;
+}
+
+.primary-nav a.active {
+  background: rgba(125, 211, 252, 0.16);
+  color: var(--text);
+}
+
+.session-history-list {
+  display: grid;
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.session-card {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.9);
+}
+
+.session-card h3 {
+  margin: 4px 0 8px;
+}
+
+.session-card p {
+  margin: 4px 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--muted);
+}

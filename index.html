@@ -25,8 +25,8 @@
           <h1>AI Engineering Learning Lab 2026</h1>
           <p class="hero-subtitle">Aprende construyendo: convierte cada semana en una práctica verificable y cada proyecto en evidencia para tu portafolio y demo final.</p>
           <div class="hero-actions">
-            <a class="primary-btn" href="#learning-path">Continuar mi ruta</a>
-            <a class="hero-secondary-link" href="#program-projects">Ver proyectos del programa</a>
+            <a class="primary-btn" href="#view-mi-ruta">Continuar mi ruta</a>
+            <a class="hero-secondary-link" href="#view-proyectos">Ver proyectos del programa</a>
           </div>
         </div>
         <div class="topbar-actions">
@@ -35,14 +35,16 @@
       </header>
 
       <nav class="primary-nav" aria-label="Navegación principal">
-        <a href="#learning-path">Mi ruta</a>
-        <a href="#roadmap">Roadmap</a>
-        <a href="#labs">Laboratorios</a>
-        <a href="#lab-workbench">Consola y mentor</a>
-        <a href="#program-projects">Proyectos</a>
-        <a href="#learning-modes">Entrenamiento</a>
-        <a href="#demo-readiness">Demo final</a>
-        <a href="#student-notes">Notas</a>
+        <a href="#view-mi-ruta" data-nav="view-mi-ruta">Mi ruta</a>
+        <a href="#view-sesiones" data-nav="view-sesiones">Sesiones</a>
+        <a href="#view-roadmap" data-nav="view-roadmap">Roadmap</a>
+        <a href="#view-laboratorios" data-nav="view-laboratorios">Laboratorios</a>
+        <a href="#view-consola" data-nav="view-consola">Consola y mentor</a>
+        <a href="#view-proyectos" data-nav="view-proyectos">Proyectos</a>
+        <a href="#view-entrenamiento" data-nav="view-entrenamiento">Entrenamiento</a>
+        <a href="#view-demo" data-nav="view-demo">Demo final</a>
+        <a href="#view-recursos" data-nav="view-recursos">Recursos</a>
+        <a href="#view-notas" data-nav="view-notas">Notas</a>
       </nav>
 
       <main id="main-content">
@@ -83,267 +85,330 @@
           </label>
         </section>
 
-        <section class="panel" id="learning-path">
-          <div class="panel-header">
-            <h2>Tu ruta de aprendizaje</h2>
-          </div>
-          <p class="panel-subtitle">Consulta tu avance y el siguiente paso recomendado. El progreso se guarda en este navegador.</p>
-          <div id="studySummary" class="study-summary-grid" aria-live="polite"></div>
-        </section>
+        <div class="view" id="view-mi-ruta" data-view="view-mi-ruta">
+          <section class="panel" id="learning-path">
+            <div class="panel-header">
+              <h2>Tu ruta de aprendizaje</h2>
+            </div>
+            <p class="panel-subtitle">Consulta tu avance y el siguiente paso recomendado. El progreso se guarda en este navegador.</p>
+            <div id="studySummary" class="study-summary-grid" aria-live="polite"></div>
+          </section>
 
-        <section class="panel" id="today-focus">
-          <div class="panel-header">
-            <h2>Empieza por aquí</h2>
-          </div>
-          <p class="panel-subtitle">Una sesión útil tiene un objetivo concreto, una práctica y una nota de lo aprendido.</p>
-          <div id="studyModeList" class="study-mode-grid" aria-live="polite"></div>
-        </section>
+          <section class="panel" id="today-focus">
+            <div class="panel-header">
+              <h2>Empieza por aquí</h2>
+            </div>
+            <p class="panel-subtitle">Una sesión útil tiene un objetivo concreto, una práctica y una nota de lo aprendido.</p>
+            <div id="studyModeList" class="study-mode-grid" aria-live="polite"></div>
+          </section>
 
-        <section class="panel">
-          <div class="panel-header">
-            <h2>Objetivos de la semana seleccionada</h2>
-          </div>
-          <div id="learningObjectives" class="objective-grid" aria-live="polite"></div>
-        </section>
+          <section class="panel" id="week-objectives">
+            <div class="panel-header">
+              <h2>Objetivos de la semana seleccionada</h2>
+            </div>
+            <div id="learningObjectives" class="objective-grid" aria-live="polite"></div>
+          </section>
+        </div>
 
-        <section class="panel" id="learning-modes">
-          <div class="panel-header">
-            <h2>Entrena y prepárate para tu siguiente paso</h2>
-          </div>
-          <p class="panel-subtitle">Alterna práctica deliberada sin IA, mentoría asistida, simulación de entrevista y preparación laboral.</p>
-          <div id="learningModes" class="learning-mode-grid"></div>
-        </section>
+        <div class="view" id="view-sesiones" data-view="view-sesiones" hidden>
+          <section class="panel" id="mentor-sessions">
+            <div class="panel-header">
+              <h2>Sesiones de mentoría</h2>
+            </div>
+            <p class="panel-subtitle">Registra cada sesión guiada (como las que haces en el chat con Claude Code) siguiendo la plantilla de <code>docs/mentor/06_PLANTILLA_SESION.md</code>. Es tu evidencia real de progreso, no una tarea más.</p>
+            <div class="workbench-grid">
+              <section class="workbench-card" aria-labelledby="new-session-title">
+                <h3 id="new-session-title">Nueva sesión</h3>
+                <label class="workbench-field" for="sessionTopic">
+                  <span>Tema</span>
+                  <input id="sessionTopic" type="text" maxlength="200" placeholder="Ej: Terminal y Git — diagnóstico inicial" />
+                </label>
+                <label class="workbench-field" for="sessionObjective">
+                  <span>Objetivo observable (qué podrás hacer al terminar)</span>
+                  <input id="sessionObjective" type="text" maxlength="300" />
+                </label>
+                <label class="workbench-field" for="sessionSummary">
+                  <span>Qué se trabajó (comandos, conceptos, laboratorio)</span>
+                  <textarea id="sessionSummary" rows="4" maxlength="2000"></textarea>
+                </label>
+                <label class="workbench-field" for="sessionEvidence">
+                  <span>Evidencia (salida real observada, no recordada)</span>
+                  <textarea id="sessionEvidence" rows="3" maxlength="1500"></textarea>
+                </label>
+                <label class="workbench-field" for="sessionMistake">
+                  <span>Error más importante y cómo se diagnosticó</span>
+                  <textarea id="sessionMistake" rows="2" maxlength="1000"></textarea>
+                </label>
+                <label class="workbench-field" for="sessionNextTask">
+                  <span>Tarea para la próxima sesión</span>
+                  <input id="sessionNextTask" type="text" maxlength="300" />
+                </label>
+                <button id="saveSessionBtn" class="primary-btn" type="button">Guardar sesión</button>
+                <p id="sessionSaveStatus" class="workbench-help" role="status"></p>
+              </section>
+              <section class="workbench-card" aria-labelledby="session-history-title">
+                <h3 id="session-history-title">Historial</h3>
+                <p id="sessionHistorySummary" class="workbench-help"></p>
+                <div id="sessionHistoryList" class="session-history-list" aria-live="polite"></div>
+              </section>
+            </div>
+          </section>
+        </div>
 
-        <section class="panel" id="roadmap">
-          <div class="panel-header">
-            <h2>Roadmap profesional</h2>
-          </div>
-          <p class="panel-subtitle">Selecciona una semana para ver objetivo, conceptos, reto y evidencia esperada. Usa los controles para marcarla completada.</p>
-          <div id="weekList" class="week-grid" aria-live="polite"></div>
-        </section>
+        <div class="view" id="view-roadmap" data-view="view-roadmap" hidden>
+          <section class="panel" id="roadmap">
+            <div class="panel-header">
+              <h2>Roadmap profesional</h2>
+            </div>
+            <p class="panel-subtitle">Selecciona una semana para ver objetivo, conceptos, reto y evidencia esperada. Usa los controles para marcarla completada.</p>
+            <div id="weekList" class="week-grid" aria-live="polite"></div>
+          </section>
 
-        <section class="panel" id="labs">
-          <div class="panel-header">
-            <h2>Laboratorios prácticos</h2>
-          </div>
-          <p class="panel-subtitle">Construye, prueba y documenta. Abre un laboratorio para consultar pasos, criterios y pistas.</p>
-          <div id="labList" class="lab-grid" aria-live="polite"></div>
-        </section>
+          <section class="panel" id="week-detail">
+            <div class="panel-header">
+              <h2>Detalle de aprendizaje</h2>
+            </div>
+            <div id="detailPanel" class="detail-panel" aria-live="polite"></div>
+          </section>
+        </div>
 
-        <section class="panel" id="week-detail">
-          <div class="panel-header">
-            <h2>Detalle de aprendizaje</h2>
-          </div>
-          <div id="detailPanel" class="detail-panel" aria-live="polite"></div>
-        </section>
+        <div class="view" id="view-laboratorios" data-view="view-laboratorios" hidden>
+          <section class="panel" id="labs">
+            <div class="panel-header">
+              <h2>Laboratorios prácticos</h2>
+            </div>
+            <p class="panel-subtitle">Construye, prueba y documenta. Abre un laboratorio para consultar pasos, criterios y pistas.</p>
+            <div id="labList" class="lab-grid" aria-live="polite"></div>
+          </section>
+        </div>
 
-        <section class="panel" id="lab-workbench">
-          <div class="panel-header">
-            <h2>Consola de práctica y mentor local</h2>
-          </div>
-          <p class="panel-subtitle">Ejecuta fragmentos en un contenedor temporal sin red ni acceso a tus archivos. El mentor usa Ollama en tu equipo; el código solo se comparte si lo autorizas.</p>
-          <div id="labEnvironmentStatus" class="local-tool-status" role="status" aria-live="polite">Comprobando Docker y Ollama...</div>
-          <button id="refreshEnvironmentBtn" class="secondary-btn environment-refresh-btn" type="button">Comprobar servicios locales</button>
-          <details id="environmentDetails" class="environment-details">
-            <summary>Ver inventario detectado en este equipo</summary>
-            <p class="workbench-help">El inventario se limita a herramientas conocidas, contenedores activos, puertos en escucha y este workspace. No se comparte con Ollama.</p>
-            <button id="refreshEnvironmentDetailsBtn" class="secondary-btn" type="button">Actualizar inventario</button>
-            <pre id="environmentInventoryOutput" class="environment-inventory" role="status" aria-live="polite">Detectando herramientas locales...</pre>
-          </details>
-          <div class="workbench-grid">
-            <section class="workbench-card" aria-labelledby="runner-title">
-              <h3 id="runner-title">Ejecutar un fragmento</h3>
-              <label class="workbench-field">
-                <span>Lenguaje</span>
-                <select id="runnerLanguage">
-                  <option value="javascript">JavaScript (Node.js)</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java (clase Main)</option>
-                  <option value="sql">SQL (SQLite temporal)</option>
+        <div class="view" id="view-consola" data-view="view-consola" hidden>
+          <section class="panel" id="lab-workbench">
+            <div class="panel-header">
+              <h2>Consola de práctica y mentor local</h2>
+            </div>
+            <p class="panel-subtitle">Ejecuta fragmentos en un contenedor temporal sin red ni acceso a tus archivos. El mentor usa Ollama en tu equipo; el código solo se comparte si lo autorizas.</p>
+            <div id="labEnvironmentStatus" class="local-tool-status" role="status" aria-live="polite">Comprobando Docker y Ollama...</div>
+            <button id="refreshEnvironmentBtn" class="secondary-btn environment-refresh-btn" type="button">Comprobar servicios locales</button>
+            <details id="environmentDetails" class="environment-details">
+              <summary>Ver inventario detectado en este equipo</summary>
+              <p class="workbench-help">El inventario se limita a herramientas conocidas, contenedores activos, puertos en escucha y este workspace. No se comparte con Ollama.</p>
+              <button id="refreshEnvironmentDetailsBtn" class="secondary-btn" type="button">Actualizar inventario</button>
+              <pre id="environmentInventoryOutput" class="environment-inventory" role="status" aria-live="polite">Detectando herramientas locales...</pre>
+            </details>
+            <div class="workbench-grid">
+              <section class="workbench-card" aria-labelledby="runner-title">
+                <h3 id="runner-title">Ejecutar un fragmento</h3>
+                <label class="workbench-field">
+                  <span>Lenguaje</span>
+                  <select id="runnerLanguage">
+                    <option value="javascript">JavaScript (Node.js)</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java (clase Main)</option>
+                    <option value="sql">SQL (SQLite temporal)</option>
+                  </select>
+                </label>
+                <label class="workbench-field" for="runnerSource">
+                  <span>Código de práctica</span>
+                  <textarea id="runnerSource" rows="12" maxlength="16000" spellcheck="false" aria-describedby="runnerLimit"></textarea>
+                </label>
+                <small id="runnerLimit">Máximo 16 000 caracteres. Cada ejecución usa un contenedor nuevo; los archivos no se conservan.</small>
+                <button id="runCodeBtn" class="primary-btn" type="button">Ejecutar en sandbox</button>
+                <div id="runnerResult" class="runner-result" role="status" aria-live="polite">
+                  <strong>Salida</strong>
+                  <pre id="runnerOutput">La salida y los errores aparecerán aquí.</pre>
+                </div>
+
+                <label class="workbench-field" for="gradingExerciseSelect">
+                  <span>Calificar mi código (opcional)</span>
+                  <select id="gradingExerciseSelect">
+                    <option value="">Sin ejercicio calificado seleccionado</option>
+                  </select>
+                </label>
+                <p id="gradingExerciseHelp" class="workbench-help" hidden></p>
+                <button id="gradeCodeBtn" class="secondary-btn" type="button" disabled>Calificar mi código</button>
+                <div id="gradingResult" class="grading-result" role="status" aria-live="polite" hidden>
+                  <strong id="gradingSummary"></strong>
+                  <ul id="gradingChecklist"></ul>
+                </div>
+              </section>
+              <section class="workbench-card" aria-labelledby="mentor-title">
+                <h3 id="mentor-title">Mentor Ollama</h3>
+                <p class="workbench-help">Pregunta por conceptos, errores o próximos pasos. La respuesta es una sugerencia: compruébala con pruebas y documentación.</p>
+                <label class="share-context">
+                  <input id="shareMentorContext" type="checkbox" />
+                  <span>Compartir con el modelo local mi código actual y la última salida</span>
+                </label>
+                <div id="mentorConversation" class="mentor-conversation" aria-live="polite" aria-label="Conversación con el mentor">
+                  <p class="mentor-placeholder">La conversación solo vive en esta pestaña.</p>
+                </div>
+                <label class="workbench-field" for="mentorQuestion">
+                  <span>Tu pregunta</span>
+                  <textarea id="mentorQuestion" rows="3" maxlength="1800" placeholder="¿Qué intentaste y qué resultado esperabas?"></textarea>
+                </label>
+                <button id="askMentorBtn" class="secondary-btn" type="button">Preguntar al mentor</button>
+              </section>
+              <section class="workbench-card" aria-labelledby="log-analyzer-title">
+                <h3 id="log-analyzer-title">Log Analyzer</h3>
+                <p class="workbench-help">Pega un error, stack trace o log real. El mentor local lo clasifica, propone una hipótesis y cómo confirmarla — no es un diagnóstico garantizado, es apoyo para tu propio proceso de depuración.</p>
+                <label class="workbench-field" for="logAnalyzerContext">
+                  <span>Contexto (opcional)</span>
+                  <input id="logAnalyzerContext" type="text" maxlength="400" placeholder="¿Cuándo ocurrió? Ej: al ejecutar npm run build" />
+                </label>
+                <label class="workbench-field" for="logAnalyzerText">
+                  <span>Error, log o stack trace</span>
+                  <textarea id="logAnalyzerText" rows="8" maxlength="6000" spellcheck="false" placeholder="Pega aquí el texto exacto del error..."></textarea>
+                </label>
+                <button id="analyzeLogBtn" class="secondary-btn" type="button">Analizar</button>
+                <div id="logAnalyzerResult" class="log-analyzer-result" role="status" aria-live="polite" hidden>
+                  <pre id="logAnalyzerOutput"></pre>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="panel" id="terminal-tutor">
+            <div class="panel-header">
+              <h2>Terminal Coach · Terminal Tutor</h2>
+            </div>
+            <p class="panel-subtitle">Predice, ejecuta un diagnóstico de solo lectura y contrasta el resultado real. No acepta comandos libres ni modifica archivos, proyectos o servicios.</p>
+            <div class="terminal-coach-card">
+              <label class="workbench-field" for="coachCommandSelect">
+                <span>Diagnóstico permitido</span>
+                <select id="coachCommandSelect" disabled>
+                  <option value="">Cargando catálogo...</option>
                 </select>
               </label>
-              <label class="workbench-field" for="runnerSource">
-                <span>Código de práctica</span>
-                <textarea id="runnerSource" rows="12" maxlength="16000" spellcheck="false" aria-describedby="runnerLimit"></textarea>
+              <div id="coachCommandGuide" class="coach-command-guide" aria-live="polite">Consultando los comandos compatibles con este equipo...</div>
+              <label class="workbench-field" for="coachPrediction">
+                <span>ANTES · ¿Qué esperas encontrar?</span>
+                <textarea id="coachPrediction" rows="2" maxlength="500" placeholder="Escribe una predicción antes de ejecutar el diagnóstico."></textarea>
               </label>
-              <small id="runnerLimit">Máximo 16 000 caracteres. Cada ejecución usa un contenedor nuevo; los archivos no se conservan.</small>
-              <button id="runCodeBtn" class="primary-btn" type="button">Ejecutar en sandbox</button>
-              <div id="runnerResult" class="runner-result" role="status" aria-live="polite">
-                <strong>Salida</strong>
-                <pre id="runnerOutput">La salida y los errores aparecerán aquí.</pre>
-              </div>
-
-              <label class="workbench-field" for="gradingExerciseSelect">
-                <span>Calificar mi código (opcional)</span>
-                <select id="gradingExerciseSelect">
-                  <option value="">Sin ejercicio calificado seleccionado</option>
-                </select>
-              </label>
-              <p id="gradingExerciseHelp" class="workbench-help" hidden></p>
-              <button id="gradeCodeBtn" class="secondary-btn" type="button" disabled>Calificar mi código</button>
-              <div id="gradingResult" class="grading-result" role="status" aria-live="polite" hidden>
-                <strong id="gradingSummary"></strong>
-                <ul id="gradingChecklist"></ul>
-              </div>
-            </section>
-            <section class="workbench-card" aria-labelledby="mentor-title">
-              <h3 id="mentor-title">Mentor Ollama</h3>
-              <p class="workbench-help">Pregunta por conceptos, errores o próximos pasos. La respuesta es una sugerencia: compruébala con pruebas y documentación.</p>
-              <label class="share-context">
-                <input id="shareMentorContext" type="checkbox" />
-                <span>Compartir con el modelo local mi código actual y la última salida</span>
-              </label>
-              <div id="mentorConversation" class="mentor-conversation" aria-live="polite" aria-label="Conversación con el mentor">
-                <p class="mentor-placeholder">La conversación solo vive en esta pestaña.</p>
-              </div>
-              <label class="workbench-field" for="mentorQuestion">
-                <span>Tu pregunta</span>
-                <textarea id="mentorQuestion" rows="3" maxlength="1800" placeholder="¿Qué intentaste y qué resultado esperabas?"></textarea>
-              </label>
-              <button id="askMentorBtn" class="secondary-btn" type="button">Preguntar al mentor</button>
-            </section>
-            <section class="workbench-card" aria-labelledby="log-analyzer-title">
-              <h3 id="log-analyzer-title">Log Analyzer</h3>
-              <p class="workbench-help">Pega un error, stack trace o log real. El mentor local lo clasifica, propone una hipótesis y cómo confirmarla — no es un diagnóstico garantizado, es apoyo para tu propio proceso de depuración.</p>
-              <label class="workbench-field" for="logAnalyzerContext">
-                <span>Contexto (opcional)</span>
-                <input id="logAnalyzerContext" type="text" maxlength="400" placeholder="¿Cuándo ocurrió? Ej: al ejecutar npm run build" />
-              </label>
-              <label class="workbench-field" for="logAnalyzerText">
-                <span>Error, log o stack trace</span>
-                <textarea id="logAnalyzerText" rows="8" maxlength="6000" spellcheck="false" placeholder="Pega aquí el texto exacto del error..."></textarea>
-              </label>
-              <button id="analyzeLogBtn" class="secondary-btn" type="button">Analizar</button>
-              <div id="logAnalyzerResult" class="log-analyzer-result" role="status" aria-live="polite" hidden>
-                <pre id="logAnalyzerOutput"></pre>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        <section class="panel" id="terminal-tutor">
-          <div class="panel-header">
-            <h2>Terminal Coach · Terminal Tutor</h2>
-          </div>
-          <p class="panel-subtitle">Predice, ejecuta un diagnóstico de solo lectura y contrasta el resultado real. No acepta comandos libres ni modifica archivos, proyectos o servicios.</p>
-          <div class="terminal-coach-card">
-            <label class="workbench-field" for="coachCommandSelect">
-              <span>Diagnóstico permitido</span>
-              <select id="coachCommandSelect" disabled>
-                <option value="">Cargando catálogo...</option>
-              </select>
-            </label>
-            <div id="coachCommandGuide" class="coach-command-guide" aria-live="polite">Consultando los comandos compatibles con este equipo...</div>
-            <label class="workbench-field" for="coachPrediction">
-              <span>ANTES · ¿Qué esperas encontrar?</span>
-              <textarea id="coachPrediction" rows="2" maxlength="500" placeholder="Escribe una predicción antes de ejecutar el diagnóstico."></textarea>
-            </label>
-            <button id="coachRunBtn" class="primary-btn" type="button" disabled>Ejecutar y verificar</button>
-            <section id="coachResult" class="coach-result" aria-live="polite" hidden>
-              <h3>DESPUÉS · Resultado y verificación</h3>
-              <p id="coachPredictionReview"></p>
-              <pre id="coachCommandOutput"></pre>
-              <div id="coachCommonErrors"></div>
-            </section>
-            <p id="coachStatus" class="workbench-help" role="status">Los diagnósticos disponibles aparecen según las herramientas detectadas.</p>
-          </div>
-          <div id="terminalTutorList" class="milestone-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="weak-areas">
-          <div class="panel-header">
-            <h2>Mapa de dominio personal</h2>
-          </div>
-          <p class="panel-subtitle" id="weakAreasSummary">Se actualiza cada vez que calificas un ejercicio en la consola de práctica.</p>
-          <div id="weakAreasList" class="milestone-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="program-projects">
-          <div class="panel-header">
-            <h2>Proyectos acumulativos</h2>
-          </div>
-          <p class="panel-subtitle">Seis proyectos construyen capacidades por etapas; el proyecto final integra la ruta completa.</p>
-          <div id="programProjectsList" class="milestone-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="project-milestones">
-          <div class="panel-header">
-            <h2>Hitos del proyecto final</h2>
-          </div>
-          <div id="projectMilestones" class="milestone-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="project-deliverables">
-          <div class="panel-header">
-            <h2>Entregables del proyecto</h2>
-          </div>
-          <div id="projectDeliverables" class="deliverable-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="final-evidence">
-          <div class="panel-header">
-            <h2>Evidencia final del proyecto</h2>
-          </div>
-          <div id="finalEvidenceList" class="deliverable-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="demo-readiness">
-          <div class="panel-header">
-            <h2>Preparación para la demo</h2>
-          </div>
-          <p class="panel-subtitle">Usa esta lectura como guía de avance, no como certificación automática de calidad.</p>
-          <div id="demoReadinessPanel" class="status-panel" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="sprint-guide">
-          <div class="panel-header">
-            <h2>Próximo sprint recomendado</h2>
-          </div>
-          <div id="sprintGuidePanel" class="status-panel" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="project-status">
-          <div class="panel-header">
-            <h2>Estado del proyecto</h2>
-          </div>
-          <div id="projectStatusPanel" class="status-panel" aria-live="polite"></div>
-        </section>
-
-        <section class="panel" id="final-pitch">
-          <div class="panel-header">
-            <h2>Narrativa de cierre</h2>
-          </div>
-          <div id="pitchPanel" class="status-panel" aria-live="polite"></div>
-        </section>
-
-        <section class="panel two-column" id="reference-library">
-          <div>
-            <div class="panel-header">
-              <h2>Retos</h2>
+              <button id="coachRunBtn" class="primary-btn" type="button" disabled>Ejecutar y verificar</button>
+              <section id="coachResult" class="coach-result" aria-live="polite" hidden>
+                <h3>DESPUÉS · Resultado y verificación</h3>
+                <p id="coachPredictionReview"></p>
+                <pre id="coachCommandOutput"></pre>
+                <div id="coachCommonErrors"></div>
+              </section>
+              <p id="coachStatus" class="workbench-help" role="status">Los diagnósticos disponibles aparecen según las herramientas detectadas.</p>
             </div>
-            <div id="challengeList" class="list-stack"></div>
-          </div>
-          <div>
+            <div id="terminalTutorList" class="milestone-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="weak-areas">
             <div class="panel-header">
-              <h2>Recursos</h2>
+              <h2>Mapa de dominio personal</h2>
             </div>
-            <div id="resourceList" class="list-stack"></div>
-          </div>
-        </section>
+            <p class="panel-subtitle" id="weakAreasSummary">Se actualiza cada vez que calificas un ejercicio en la consola de práctica.</p>
+            <div id="weakAreasList" class="milestone-grid" aria-live="polite"></div>
+          </section>
+        </div>
 
-        <section class="panel" id="glossary">
-          <div class="panel-header">
-            <h2>Glosario</h2>
-          </div>
-          <div id="glossaryList" class="glossary-grid"></div>
-        </section>
+        <div class="view" id="view-proyectos" data-view="view-proyectos" hidden>
+          <section class="panel" id="program-projects">
+            <div class="panel-header">
+              <h2>Proyectos acumulativos</h2>
+            </div>
+            <p class="panel-subtitle">Seis proyectos construyen capacidades por etapas; el proyecto final integra la ruta completa.</p>
+            <div id="programProjectsList" class="milestone-grid" aria-live="polite"></div>
+          </section>
 
-        <section class="panel" id="student-notes">
-          <div class="panel-header">
-            <h2>Notas del estudiante</h2>
-          </div>
-          <textarea id="notesArea" rows="8" placeholder="Escribe tus observaciones, dudas y evidencias..."></textarea>
-        </section>
+          <section class="panel" id="project-milestones">
+            <div class="panel-header">
+              <h2>Hitos del proyecto final</h2>
+            </div>
+            <div id="projectMilestones" class="milestone-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="project-deliverables">
+            <div class="panel-header">
+              <h2>Entregables del proyecto</h2>
+            </div>
+            <div id="projectDeliverables" class="deliverable-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="final-evidence">
+            <div class="panel-header">
+              <h2>Evidencia final del proyecto</h2>
+            </div>
+            <div id="finalEvidenceList" class="deliverable-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="project-status">
+            <div class="panel-header">
+              <h2>Estado del proyecto</h2>
+            </div>
+            <div id="projectStatusPanel" class="status-panel" aria-live="polite"></div>
+          </section>
+        </div>
+
+        <div class="view" id="view-entrenamiento" data-view="view-entrenamiento" hidden>
+          <section class="panel" id="learning-modes">
+            <div class="panel-header">
+              <h2>Entrena y prepárate para tu siguiente paso</h2>
+            </div>
+            <p class="panel-subtitle">Alterna práctica deliberada sin IA, mentoría asistida, simulación de entrevista y preparación laboral.</p>
+            <div id="learningModes" class="learning-mode-grid"></div>
+          </section>
+        </div>
+
+        <div class="view" id="view-demo" data-view="view-demo" hidden>
+          <section class="panel" id="demo-readiness">
+            <div class="panel-header">
+              <h2>Preparación para la demo</h2>
+            </div>
+            <p class="panel-subtitle">Usa esta lectura como guía de avance, no como certificación automática de calidad.</p>
+            <div id="demoReadinessPanel" class="status-panel" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="sprint-guide">
+            <div class="panel-header">
+              <h2>Próximo sprint recomendado</h2>
+            </div>
+            <div id="sprintGuidePanel" class="status-panel" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="final-pitch">
+            <div class="panel-header">
+              <h2>Narrativa de cierre</h2>
+            </div>
+            <div id="pitchPanel" class="status-panel" aria-live="polite"></div>
+          </section>
+        </div>
+
+        <div class="view" id="view-recursos" data-view="view-recursos" hidden>
+          <section class="panel two-column" id="reference-library">
+            <div>
+              <div class="panel-header">
+                <h2>Retos</h2>
+              </div>
+              <div id="challengeList" class="list-stack"></div>
+            </div>
+            <div>
+              <div class="panel-header">
+                <h2>Recursos</h2>
+              </div>
+              <div id="resourceList" class="list-stack"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="glossary">
+            <div class="panel-header">
+              <h2>Glosario</h2>
+            </div>
+            <div id="glossaryList" class="glossary-grid"></div>
+          </section>
+        </div>
+
+        <div class="view" id="view-notas" data-view="view-notas" hidden>
+          <section class="panel" id="student-notes">
+            <div class="panel-header">
+              <h2>Notas del estudiante</h2>
+            </div>
+            <textarea id="notesArea" rows="8" placeholder="Escribe tus observaciones, dudas y evidencias..."></textarea>
+          </section>
+        </div>
       </main>
     </div>
 

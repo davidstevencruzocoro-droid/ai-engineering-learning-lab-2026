@@ -1037,6 +1037,126 @@ const initTerminalCoach = () => {
     });
 };
 
+const VIEW_IDS = [
+  'view-mi-ruta',
+  'view-sesiones',
+  'view-roadmap',
+  'view-laboratorios',
+  'view-consola',
+  'view-proyectos',
+  'view-entrenamiento',
+  'view-demo',
+  'view-recursos',
+  'view-notas'
+];
+const DEFAULT_VIEW_ID = VIEW_IDS[0];
+
+const showView = (viewId) => {
+  const target = VIEW_IDS.includes(viewId) ? viewId : DEFAULT_VIEW_ID;
+  for (const id of VIEW_IDS) {
+    const section = document.querySelector(`#${id}`);
+    if (section) section.hidden = id !== target;
+  }
+  document.querySelectorAll('.primary-nav a[data-nav]').forEach((link) => {
+    link.classList.toggle('active', link.dataset.nav === target);
+  });
+};
+
+const initViewRouter = () => {
+  const applyFromHash = () => {
+    const hash = window.location.hash.replace('#', '');
+    showView(hash);
+  };
+  window.addEventListener('hashchange', applyFromHash);
+  applyFromHash();
+};
+
+const MENTOR_SESSIONS_KEY = 'ai-lab-mentor-sessions-v1';
+
+const getMentorSessions = () => {
+  const raw = localStorage.getItem(MENTOR_SESSIONS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s) => s && typeof s === 'object' && typeof s.id === 'string' && typeof s.topic === 'string');
+  } catch (error) {
+    return [];
+  }
+};
+
+const saveMentorSession = (session) => {
+  const sessions = getMentorSessions();
+  sessions.unshift(session);
+  localStorage.setItem(MENTOR_SESSIONS_KEY, JSON.stringify(sessions));
+  return sessions;
+};
+
+const renderSessionHistory = () => {
+  const list = document.querySelector('#sessionHistoryList');
+  const summary = document.querySelector('#sessionHistorySummary');
+  if (!list) return;
+
+  const sessions = getMentorSessions();
+  if (summary) {
+    summary.textContent = sessions.length === 0
+      ? 'Todavía no has registrado ninguna sesión.'
+      : `${sessions.length} sesión(es) registrada(s).`;
+  }
+
+  list.innerHTML = sessions
+    .map((s) => `
+      <article class="session-card">
+        <div class="milestone-header">
+          <span class="milestone-badge">${new Date(s.createdAt).toLocaleString()}</span>
+        </div>
+        <h3>${s.topic}</h3>
+        ${s.objective ? `<p><strong>Objetivo:</strong> ${s.objective}</p>` : ''}
+        ${s.summary ? `<p><strong>Qué se trabajó:</strong> ${s.summary}</p>` : ''}
+        ${s.evidence ? `<p><strong>Evidencia:</strong> ${s.evidence}</p>` : ''}
+        ${s.mistake ? `<p><strong>Error y diagnóstico:</strong> ${s.mistake}</p>` : ''}
+        ${s.nextTask ? `<p><strong>Tarea siguiente:</strong> ${s.nextTask}</p>` : ''}
+      </article>
+    `)
+    .join('');
+};
+
+const initMentorSessions = () => {
+  const saveButton = document.querySelector('#saveSessionBtn');
+  if (!saveButton) return;
+
+  renderSessionHistory();
+
+  saveButton.addEventListener('click', () => {
+    const topic = document.querySelector('#sessionTopic').value.trim();
+    const status = document.querySelector('#sessionSaveStatus');
+    if (!topic) {
+      status.textContent = 'Escribe al menos el tema de la sesión.';
+      document.querySelector('#sessionTopic').focus();
+      return;
+    }
+
+    const session = {
+      id: `session-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      topic,
+      objective: document.querySelector('#sessionObjective').value.trim(),
+      summary: document.querySelector('#sessionSummary').value.trim(),
+      evidence: document.querySelector('#sessionEvidence').value.trim(),
+      mistake: document.querySelector('#sessionMistake').value.trim(),
+      nextTask: document.querySelector('#sessionNextTask').value.trim()
+    };
+
+    saveMentorSession(session);
+    renderSessionHistory();
+    status.textContent = 'Sesión guardada.';
+
+    for (const id of ['sessionTopic', 'sessionObjective', 'sessionSummary', 'sessionEvidence', 'sessionMistake', 'sessionNextTask']) {
+      document.querySelector(`#${id}`).value = '';
+    }
+  });
+};
+
 const renderNotes = () => {
   const notesArea = document.querySelector('#notesArea');
   if (!notesArea) return;
@@ -1438,4 +1558,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAll();
   initLabWorkbench();
   initTerminalCoach();
+  initViewRouter();
+  initMentorSessions();
 });
