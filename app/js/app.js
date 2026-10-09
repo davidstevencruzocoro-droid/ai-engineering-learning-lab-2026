@@ -1,5 +1,5 @@
 import { roadmap, labs, projectMilestones, projectDeliverables, finalEvidence, projectStatus, challenges, resources, glossary, weekDetails, labDetails, programProjects, finalProject, terminalCommands } from './data.js';
-import { STORAGE_KEY, defaultProgress, PROJECT_STATUSES, calculateLevel, calculateLabXp, getLabHelpLevel, LAB_HELP_XP_PERCENTAGES, recordLabHelp, setProjectStatus, toggleCareerItem, toggleWeek, toggleLab, toggleObjective } from './progress.js';
+import { STORAGE_KEY, defaultProgress, PROJECT_STATUSES, calculateLevel, calculateLabXp, getLabHelpLevel, LAB_HELP_XP_PERCENTAGES, recordLabHelp, recordGradingAttempt, getWeakAreas, getMasteredExercises, setProjectStatus, toggleCareerItem, toggleWeek, toggleLab, toggleObjective } from './progress.js';
 
 const careerChecklist = [
   { id: 'career-project', label: 'Tengo 2-3 proyectos con demo o instrucciones reproducibles.' },
@@ -795,6 +795,47 @@ const renderGlossary = () => {
     .join('');
 };
 
+const renderWeakAreas = (progress) => {
+  const container = document.querySelector('#weakAreasList');
+  const summaryEl = document.querySelector('#weakAreasSummary');
+  if (!container) return;
+
+  const weak = getWeakAreas(progress);
+  const mastered = getMasteredExercises(progress);
+
+  if (summaryEl) {
+    summaryEl.textContent = weak.length === 0 && mastered.length === 0
+      ? 'Todavía no has calificado ningún ejercicio. Usa "Calificar mi código" en la consola de práctica.'
+      : `${mastered.length} ejercicio(s) dominado(s) · ${weak.length} pendiente(s) de repasar`;
+  }
+
+  if (weak.length === 0) {
+    container.innerHTML = mastered.length > 0
+      ? '<p class="workbench-help">No tienes ejercicios pendientes de repaso ahora mismo. Buen trabajo.</p>'
+      : '';
+    return;
+  }
+
+  container.innerHTML = weak
+    .map((attempt) => {
+      const lab = labs.find((l) => l.id === attempt.labId);
+      const lastAttempt = new Date(attempt.lastAttemptAt).toLocaleString();
+      return `
+        <article class="milestone-card weak-area-card">
+          <div class="milestone-header">
+            <span class="milestone-badge">${lab ? lab.title : attempt.labId}</span>
+            <span class="milestone-xp">${attempt.passed}/${attempt.total}</span>
+          </div>
+          <p><strong>Intentos:</strong> ${attempt.attempts} · <strong>Último intento:</strong> ${lastAttempt}</p>
+          <ul>
+            ${attempt.failingChecks.map((name) => `<li class="grade-fail">✘ ${name}</li>`).join('')}
+          </ul>
+        </article>
+      `;
+    })
+    .join('');
+};
+
 const stripCodeFence = (raw) => {
   if (!raw) return '';
   const match = raw.match(/^```(\w*)\r?\n([\s\S]*?)\r?\n```$/);
@@ -1000,6 +1041,11 @@ const initLabWorkbench = () => {
   const gradingResult = document.querySelector('#gradingResult');
   const gradingSummary = document.querySelector('#gradingSummary');
   const gradingChecklist = document.querySelector('#gradingChecklist');
+  const logAnalyzerContext = document.querySelector('#logAnalyzerContext');
+  const logAnalyzerText = document.querySelector('#logAnalyzerText');
+  const analyzeLogButton = document.querySelector('#analyzeLogBtn');
+  const logAnalyzerResult = document.querySelector('#logAnalyzerResult');
+  const logAnalyzerOutput = document.querySelector('#logAnalyzerOutput');
   const sourceByLanguage = new Map();
   let lastOutput = '';
   let gradableExercises = [];
@@ -1189,6 +1235,32 @@ const initLabWorkbench = () => {
     }
   });
 
+  if (analyzeLogButton) {
+    analyzeLogButton.addEventListener('click', async () => {
+      const logText = logAnalyzerText.value.trim();
+      if (!logText) {
+        logAnalyzerText.focus();
+        return;
+      }
+      analyzeLogButton.disabled = true;
+      logAnalyzerResult.hidden = false;
+      logAnalyzerOutput.textContent = 'Analizando con el mentor local...';
+      try {
+        const response = await fetch('/api/log-analyzer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logText, context: logAnalyzerContext.value.trim() })
+        });
+        const result = await readApiResponse(response);
+        logAnalyzerOutput.textContent = result.answer;
+      } catch (error) {
+        logAnalyzerOutput.textContent = `No se pudo analizar: ${error.message}`;
+      } finally {
+        analyzeLogButton.disabled = false;
+      }
+    });
+  }
+
   const loadGradableExercises = async () => {
     if (!gradingSelect) return;
     try {
@@ -1240,6 +1312,14 @@ const initLabWorkbench = () => {
           gradingChecklist.innerHTML = result.results
             .map((r) => `<li class="${r.pass ? 'grade-pass' : 'grade-fail'}">${r.pass ? '✔' : '✘'} ${r.name}${r.detail ? ` — ${r.detail}` : ''}</li>`)
             .join('');
+          const nextProgress = recordGradingAttempt(getProgress(), {
+            labId: exercise.labId,
+            language: exercise.language,
+            results: result.results,
+            summary: result.summary
+          });
+          saveProgress(nextProgress);
+          renderWeakAreas(nextProgress);
         }
       } catch (error) {
         gradingSummary.textContent = `No se pudo calificar: ${error.message}`;
@@ -1305,6 +1385,7 @@ const renderAll = () => {
   renderResources();
   renderGlossary();
   renderTerminalTutor();
+  renderWeakAreas(progress);
   renderNotes();
   renderFilteredContent();
 

@@ -11,7 +11,8 @@ export const defaultProgress = {
   completedObjectives: [],
   labHelpLevels: {},
   projectStatuses: {},
-  completedCareerItems: []
+  completedCareerItems: [],
+  gradingAttempts: {}
 };
 
 export function calculateLevel(xp) {
@@ -93,6 +94,45 @@ export function setProjectStatus(progress, projectId, status) {
     ...progress,
     projectStatuses: { ...progress.projectStatuses, [projectId]: status }
   };
+}
+
+export function recordGradingAttempt(progress, { labId, language, results, summary }) {
+  if (typeof labId !== 'string' || labId.length === 0) {
+    throw new TypeError('El identificador del laboratorio es obligatorio.');
+  }
+  if (typeof language !== 'string' || language.length === 0) {
+    throw new TypeError('El lenguaje del ejercicio calificado es obligatorio.');
+  }
+
+  const key = `${labId}:${language}`;
+  const previous = progress.gradingAttempts?.[key];
+  const attempt = {
+    labId,
+    language,
+    attempts: (previous?.attempts ?? 0) + 1,
+    lastAttemptAt: new Date().toISOString(),
+    passed: summary.passed,
+    total: summary.total,
+    resolved: summary.total > 0 && summary.passed === summary.total,
+    failingChecks: (results || []).filter((r) => !r.pass).map((r) => r.name)
+  };
+
+  return {
+    ...progress,
+    gradingAttempts: { ...progress.gradingAttempts, [key]: attempt }
+  };
+}
+
+export function getWeakAreas(progress) {
+  const attempts = Object.values(progress.gradingAttempts || {});
+  return attempts
+    .filter((attempt) => !attempt.resolved)
+    .sort((a, b) => new Date(a.lastAttemptAt) - new Date(b.lastAttemptAt));
+}
+
+export function getMasteredExercises(progress) {
+  const attempts = Object.values(progress.gradingAttempts || {});
+  return attempts.filter((attempt) => attempt.resolved);
 }
 
 export function toggleCareerItem(progress, itemId) {

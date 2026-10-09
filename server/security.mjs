@@ -2,6 +2,8 @@ export const SANDBOX_IMAGE = 'ai-lab-sandbox:local';
 export const MAX_SOURCE_LENGTH = 16_000;
 export const MAX_MENTOR_TEXT_LENGTH = 1_800;
 export const MAX_MENTOR_HISTORY = 8;
+export const MAX_LOG_TEXT_LENGTH = 6_000;
+export const MAX_LOG_CONTEXT_LENGTH = 400;
 
 export const LANGUAGE_PROFILES = Object.freeze({
   javascript: 'JavaScript (Node.js)',
@@ -95,6 +97,21 @@ export function validateGradePayload(payload) {
   }
 
   return { labId: payload.labId, language: payload.language, source: payload.source };
+}
+
+export function validateLogAnalysisPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new TypeError('El cuerpo debe ser un objeto JSON.');
+  }
+  if (typeof payload.logText !== 'string' || payload.logText.trim().length === 0) {
+    throw new TypeError('Pega un error, log o stack trace antes de analizarlo.');
+  }
+  if (payload.logText.length > MAX_LOG_TEXT_LENGTH) {
+    throw new RangeError(`El texto supera el límite de ${MAX_LOG_TEXT_LENGTH} caracteres.`);
+  }
+  const context = typeof payload.context === 'string' ? payload.context.trim().slice(0, MAX_LOG_CONTEXT_LENGTH) : '';
+
+  return { logText: payload.logText.trim(), context };
 }
 
 export function buildDockerArgs(language, containerName) {

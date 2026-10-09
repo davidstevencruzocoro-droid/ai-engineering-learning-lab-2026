@@ -1284,3 +1284,33 @@ textarea {
 .grade-fail {
   color: var(--danger);
 }
+
+.log-analyzer-result {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(11, 16, 32, 0.76);
+}
+
+.log-analyzer-result pre {
+  margin: 0;
+  color: var(--text);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.weak-area-card {
+  border-left: 3px solid var(--danger);
+}
+
+.weak-area-card ul {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 4px;
+  font-size: 0.86rem;
+}

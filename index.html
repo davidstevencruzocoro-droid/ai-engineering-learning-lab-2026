@@ -202,6 +202,22 @@
               </label>
               <button id="askMentorBtn" class="secondary-btn" type="button">Preguntar al mentor</button>
             </section>
+            <section class="workbench-card" aria-labelledby="log-analyzer-title">
+              <h3 id="log-analyzer-title">Log Analyzer</h3>
+              <p class="workbench-help">Pega un error, stack trace o log real. El mentor local lo clasifica, propone una hipótesis y cómo confirmarla — no es un diagnóstico garantizado, es apoyo para tu propio proceso de depuración.</p>
+              <label class="workbench-field" for="logAnalyzerContext">
+                <span>Contexto (opcional)</span>
+                <input id="logAnalyzerContext" type="text" maxlength="400" placeholder="¿Cuándo ocurrió? Ej: al ejecutar npm run build" />
+              </label>
+              <label class="workbench-field" for="logAnalyzerText">
+                <span>Error, log o stack trace</span>
+                <textarea id="logAnalyzerText" rows="8" maxlength="6000" spellcheck="false" placeholder="Pega aquí el texto exacto del error..."></textarea>
+              </label>
+              <button id="analyzeLogBtn" class="secondary-btn" type="button">Analizar</button>
+              <div id="logAnalyzerResult" class="log-analyzer-result" role="status" aria-live="polite" hidden>
+                <pre id="logAnalyzerOutput"></pre>
+              </div>
+            </section>
           </div>
         </section>
 
@@ -232,6 +248,14 @@
             <p id="coachStatus" class="workbench-help" role="status">Los diagnósticos disponibles aparecen según las herramientas detectadas.</p>
           </div>
           <div id="terminalTutorList" class="milestone-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" id="weak-areas">
+          <div class="panel-header">
+            <h2>Mapa de dominio personal</h2>
+          </div>
+          <p class="panel-subtitle" id="weakAreasSummary">Se actualiza cada vez que calificas un ejercicio en la consola de práctica.</p>
+          <div id="weakAreasList" class="milestone-grid" aria-live="polite"></div>
         </section>
 
         <section class="panel" id="program-projects">
