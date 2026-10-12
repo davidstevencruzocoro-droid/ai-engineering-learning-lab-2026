@@ -1,5 +1,5 @@
-import { roadmap, labs, projectMilestones, projectDeliverables, finalEvidence, projectStatus, challenges, resources, glossary, weekDetails, labDetails, programProjects, finalProject, terminalCommands } from './data.js';
-import { STORAGE_KEY, defaultProgress, PROJECT_STATUSES, calculateLevel, calculateLabXp, getLabHelpLevel, LAB_HELP_XP_PERCENTAGES, recordLabHelp, recordGradingAttempt, getWeakAreas, getMasteredExercises, setProjectStatus, toggleCareerItem, toggleWeek, toggleLab, toggleObjective } from './progress.js';
+import { roadmap, labs, projectMilestones, projectDeliverables, finalEvidence, projectStatus, challenges, resources, glossary, weekDetails, labDetails, programProjects, finalProject, terminalCommands, fundamentals } from './data.js';
+import { STORAGE_KEY, defaultProgress, PROJECT_STATUSES, calculateLevel, calculateLabXp, getLabHelpLevel, LAB_HELP_XP_PERCENTAGES, recordLabHelp, recordGradingAttempt, getWeakAreas, getMasteredExercises, setProjectStatus, toggleCareerItem, toggleWeek, toggleLab, toggleObjective, toggleFundamental } from './progress.js';
 
 const careerChecklist = [
   { id: 'career-project', label: 'Tengo 2-3 proyectos con demo o instrucciones reproducibles.' },
@@ -111,6 +111,9 @@ const getProgress = () => {
       gradingAttempts,
       completedCareerItems: Array.isArray(saved?.completedCareerItems)
         ? [...new Set(saved.completedCareerItems.filter((item) => typeof item === 'string'))]
+        : [],
+      completedFundamentals: Array.isArray(saved?.completedFundamentals)
+        ? [...new Set(saved.completedFundamentals.filter((item) => typeof item === 'string'))]
         : []
     };
   } catch (error) {
@@ -145,16 +148,85 @@ const renderStats = (progress) => {
   labsCompleted.textContent = String(progress.completedLabs.length);
 };
 
+// Calcula el único siguiente paso concreto, en orden: fundamento sin entender →
+// laboratorio pendiente de la semana en curso → semana sin marcar → cualquier lab suelto → fin.
+const getNextStep = (progress) => {
+  const nextFundamental = fundamentals.find((f) => !progress.completedFundamentals.includes(f.id));
+  if (nextFundamental) {
+    return {
+      kind: 'fundamento',
+      kindLabel: 'Fundamento',
+      title: nextFundamental.title,
+      detail: `Semana ${nextFundamental.week} · ${nextFundamental.category}`,
+      open: () => {
+        showView('view-fundamentos');
+        openFundamentalDetail(nextFundamental.id);
+        document.querySelector('#fundamental-detail')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+    };
+  }
+
+  const nextWeek = roadmap.find((week) => !progress.completedWeeks.includes(week.id));
+  if (nextWeek) {
+    const nextLab = labs.find((lab) => lab.week === nextWeek.id && !progress.completedLabs.includes(lab.id));
+    if (nextLab) {
+      return {
+        kind: 'lab',
+        kindLabel: 'Laboratorio',
+        title: nextLab.title,
+        detail: `Semana ${nextWeek.id} · ${nextWeek.title}`,
+        open: () => {
+          showView('view-laboratorios');
+          openLabDetail(nextLab.id);
+          document.querySelector('#lab-detail')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      };
+    }
+    return {
+      kind: 'week',
+      kindLabel: 'Semana',
+      title: nextWeek.title,
+      detail: 'Revisa el objetivo y márcala cuando cumplas el criterio de aprobación.',
+      open: () => {
+        showView('view-roadmap');
+        window.currentWeekId = nextWeek.id;
+        openWeekDetail(nextWeek.id);
+      }
+    };
+  }
+
+  const anyLab = labs.find((lab) => !progress.completedLabs.includes(lab.id));
+  if (anyLab) {
+    return {
+      kind: 'lab',
+      kindLabel: 'Laboratorio',
+      title: anyLab.title,
+      detail: `Semana ${anyLab.week} · laboratorio pendiente`,
+      open: () => {
+        showView('view-laboratorios');
+        openLabDetail(anyLab.id);
+      }
+    };
+  }
+
+  return {
+    kind: 'done',
+    kindLabel: 'Completado',
+    title: 'Terminaste el contenido del Lab',
+    detail: 'Registra una sesión de cierre o retoma el proyecto final.',
+    open: () => showView('view-sesiones')
+  };
+};
+
 const renderStudySummary = (progress) => {
   const container = document.querySelector('#studySummary');
   if (!container) return;
 
-  const nextWeek = roadmap.find((week) => !progress.completedWeeks.includes(week.id)) || roadmap[roadmap.length - 1];
-  const nextLab = labs.find((lab) => !progress.completedLabs.includes(lab.id)) || labs[labs.length - 1];
+  const nextStep = getNextStep(progress);
   const currentLevel = calculateLevel(progress.xp);
-  const completedCount = progress.completedWeeks.length + progress.completedLabs.length;
-  const completionPercent = Math.min(100, Math.round((completedCount / 48) * 100));
-  const focusLabel = nextLab ? `${nextLab.title}` : `Cierre del proyecto`;
+  const totalCount = roadmap.length + labs.length + fundamentals.length;
+  const completedCount = progress.completedWeeks.length + progress.completedLabs.length + progress.completedFundamentals.length;
+  const completionPercent = Math.min(100, Math.round((completedCount / totalCount) * 100));
 
   container.innerHTML = `
     <div class="study-summary-card metric-glow">
@@ -162,8 +234,8 @@ const renderStudySummary = (progress) => {
       <strong>${currentLevel}</strong>
     </div>
     <div class="study-summary-card">
-      <small>Próxima semana</small>
-      <strong>S${nextWeek.id}</strong>
+      <small>Tipo del siguiente paso</small>
+      <strong>${nextStep.kindLabel}</strong>
     </div>
     <div class="study-summary-card">
       <small>Avance</small>
@@ -171,7 +243,7 @@ const renderStudySummary = (progress) => {
     </div>
     <div class="study-summary-card">
       <small>Foco recomendado</small>
-      <strong>${focusLabel}</strong>
+      <strong>${escapeHtml(nextStep.title)}</strong>
     </div>
   `;
 };
@@ -180,14 +252,15 @@ const renderStudyMode = (progress) => {
   const container = document.querySelector('#studyModeList');
   if (!container) return;
 
-  const nextWeek = roadmap.find((week) => !progress.completedWeeks.includes(week.id)) || roadmap[roadmap.length - 1];
+  const nextStep = getNextStep(progress);
   const activeLab = labs.find((lab) => !progress.completedLabs.includes(lab.id)) || labs[labs.length - 1];
 
   const modes = [
     {
-      title: 'Foco de hoy',
-      items: [`Revisa ${nextWeek.title}`, 'Comienza con un objetivo claro', 'Documenta una decisión técnica'],
-      action: 'Abrir semana actual'
+      title: `Empieza aquí: ${nextStep.kindLabel}`,
+      focus: true,
+      items: [escapeHtml(nextStep.title), escapeHtml(nextStep.detail)],
+      action: nextStep.kind === 'done' ? 'Ir a sesiones' : 'Ir ahora'
     },
     {
       title: 'Modo lab',
@@ -203,12 +276,12 @@ const renderStudyMode = (progress) => {
 
   container.innerHTML = modes
     .map((mode, index) => `
-      <article class="study-mode-card">
+      <article class="study-mode-card ${mode.focus ? 'study-mode-focus' : ''}">
         <h3>${mode.title}</h3>
         <ul>
           ${mode.items.map((item) => `<li>${item}</li>`).join('')}
         </ul>
-        <button class="secondary-btn" type="button" data-study-mode="${index}">${mode.action}</button>
+        <button class="${mode.focus ? 'primary-btn' : 'secondary-btn'}" type="button" data-study-mode="${index}">${mode.action}</button>
       </article>
     `)
     .join('');
@@ -217,12 +290,14 @@ const renderStudyMode = (progress) => {
     const modeIndex = Number(button.dataset.studyMode);
     button.addEventListener('click', () => {
       if (modeIndex === 0) {
-        openWeekDetail(nextWeek.id);
+        nextStep.open();
       }
       if (modeIndex === 1) {
+        showView('view-laboratorios');
         openLabDetail(activeLab.id);
       }
       if (modeIndex === 2) {
+        showView('view-notas');
         const notesArea = document.querySelector('#notesArea');
         notesArea?.focus();
       }
@@ -635,6 +710,81 @@ const renderWeeks = (progress) => {
   });
 };
 
+const renderFundamentals = (progress) => {
+  const list = document.querySelector('#fundamentalsList');
+  if (!list) return;
+
+  list.innerHTML = fundamentals
+    .map((lesson) => {
+      const done = progress.completedFundamentals.includes(lesson.id);
+      return `
+        <article class="week-card ${done ? 'done' : ''}" data-fundamental-id="${lesson.id}">
+          <div class="week-header">
+            <span class="week-pill">Semana ${lesson.week} · ${escapeHtml(lesson.category)}</span>
+            <button class="tiny-btn" type="button">${done ? 'Entendido' : 'Marcar como entendido'}</button>
+          </div>
+          <h3>${escapeHtml(lesson.title)}</h3>
+          <p>${escapeHtml(lesson.question)}</p>
+          <button class="card-detail-btn" type="button" data-open-fundamental="${lesson.id}" aria-label="Ver detalle de ${escapeHtml(lesson.title)}">Ver explicación</button>
+        </article>
+      `;
+    })
+    .join('');
+
+  list.querySelectorAll('.week-card').forEach((card) => {
+    const button = card.querySelector('.tiny-btn');
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const id = card.dataset.fundamentalId;
+      const nextProgress = toggleFundamental(getProgress(), id);
+      saveProgress(nextProgress);
+      renderAll();
+      openFundamentalDetail(id);
+    });
+
+    card.querySelector('[data-open-fundamental]').addEventListener('click', () => {
+      openFundamentalDetail(card.dataset.fundamentalId);
+      document.querySelector('#fundamental-detail')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    });
+  });
+};
+
+const openFundamentalDetail = (lessonId) => {
+  window.currentFundamentalId = lessonId;
+  const lesson = fundamentals.find((item) => item.id === lessonId);
+  if (!lesson) return;
+
+  const panel = document.querySelector('#fundamentalDetailPanel');
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="detail-header-row">
+      <h3>${escapeHtml(lesson.title)}</h3>
+      <span class="detail-badge">Semana ${lesson.week}</span>
+    </div>
+    <p><strong>Pregunta de diagnóstico:</strong> ${escapeHtml(lesson.question)}</p>
+    <h4>Modelo mental</h4>
+    ${renderLessonMarkdown(lesson.mentalModel)}
+    <h4>En este proyecto</h4>
+    ${renderLessonMarkdown(lesson.inThisProject)}
+    <h4>Para verificar que entendiste</h4>
+    <ul class="detail-list">
+      ${lesson.selfCheck.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+    </ul>
+    <details class="advanced-case">
+      <summary>Caso avanzado</summary>
+      ${renderLessonMarkdown(lesson.advancedCase)}
+    </details>
+  `;
+};
+
+const ensureCurrentFundamentalId = () => {
+  if (!window.currentFundamentalId || !fundamentals.some((item) => item.id === window.currentFundamentalId)) {
+    window.currentFundamentalId = fundamentals[0]?.id;
+  }
+};
+
+
 const renderLabs = (progress) => {
   const labList = document.querySelector('#labList');
   labList.innerHTML = labs
@@ -669,7 +819,7 @@ const renderLabs = (progress) => {
 
     card.querySelector('[data-open-lab]').addEventListener('click', () => {
       openLabDetail(card.dataset.labId);
-      document.querySelector('#week-detail')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      document.querySelector('#lab-detail')?.scrollIntoView({ behavior: 'auto', block: 'start' });
     });
   });
 };
@@ -712,6 +862,12 @@ const openWeekDetail = (weekId) => {
     <ul class="detail-list">
       ${detailList.map((item) => `<li>${item}</li>`).join('')}
     </ul>
+    ${detail.technicalDepth ? `
+      <details class="advanced-case">
+        <summary>Profundización técnica</summary>
+        ${renderLessonMarkdown(detail.technicalDepth)}
+      </details>
+    ` : ''}
   `;
 
   const progress = getProgress();
@@ -722,7 +878,7 @@ const openLabDetail = (labId) => {
   const detail = labDetails.find((item) => item.id === labId);
   if (!detail) return;
 
-  const panel = document.querySelector('#detailPanel');
+  const panel = document.querySelector('#labDetailPanel');
   if (!panel) return;
 
   const lab = labs.find((item) => item.id === labId);
@@ -867,6 +1023,49 @@ const stripCodeFence = (raw) => {
   if (!raw) return '';
   const match = raw.match(/^```(\w*)\r?\n([\s\S]*?)\r?\n```$/);
   return match ? match[2] : raw;
+};
+
+const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Render mínimo de Markdown para secciones de contenido (negrita, código inline, listas,
+// bloques de código): las lecciones de Fundamentos se escriben en Markdown real y necesitan
+// verse legibles, no como texto plano con asteriscos y guiones literales.
+const renderLessonMarkdown = (raw) => {
+  if (!raw) return '';
+  const codeBlocks = [];
+  const withPlaceholders = raw.replace(/```[a-z]*\r?\n([\s\S]*?)```/g, (_, code) => {
+    codeBlocks.push(code.replace(/\r?\n$/, ''));
+    // Rodeado de saltos de línea dobles a propósito: aísla el placeholder en su propio
+    // bloque al dividir por líneas en blanco, aunque el Markdown fuente no traiga esa
+    // línea en blanco alrededor del ``` (de lo contrario el placeholder queda incrustado
+    // en el párrafo y se imprime literal en vez de convertirse en <pre><code>).
+    return `\n\n@@CODEBLOCK${codeBlocks.length - 1}@@\n\n`;
+  });
+
+  const inline = (text) =>
+    escapeHtml(text)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  return withPlaceholders
+    .split(/\r?\n\s*\r?\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const placeholderMatch = block.match(/^@@CODEBLOCK(\d+)@@$/);
+      if (placeholderMatch) {
+        return `<pre><code>${escapeHtml(codeBlocks[Number(placeholderMatch[1])])}</code></pre>`;
+      }
+      const lines = block.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (lines.length > 0 && lines.every((line) => line.startsWith('- '))) {
+        return `<ul>${lines.map((line) => `<li>${inline(line.slice(2))}</li>`).join('')}</ul>`;
+      }
+      if (lines.length > 0 && lines.every((line) => /^\d+\.\s/.test(line))) {
+        return `<ol>${lines.map((line) => `<li>${inline(line.replace(/^\d+\.\s*/, ''))}</li>`).join('')}</ol>`;
+      }
+      return `<p>${inline(lines.join(' '))}</p>`;
+    })
+    .join('');
 };
 
 const renderTerminalTutor = () => {
@@ -1041,6 +1240,7 @@ const VIEW_IDS = [
   'view-mi-ruta',
   'view-sesiones',
   'view-roadmap',
+  'view-fundamentos',
   'view-laboratorios',
   'view-consola',
   'view-proyectos',
@@ -1487,8 +1687,8 @@ const initLabWorkbench = () => {
 const renderFilteredContent = () => {
   const searchInput = document.querySelector('#searchInput');
   const filterSelect = document.querySelector('#filterSelect');
-  const weekCards = document.querySelectorAll('.week-card');
-  const labCards = document.querySelectorAll('.lab-card');
+  const weekCards = document.querySelectorAll('#weekList .week-card');
+  const labCards = document.querySelectorAll('#labList .lab-card');
 
   const query = searchInput.value.trim().toLowerCase();
   const filter = filterSelect.value;
@@ -1527,6 +1727,7 @@ const renderAll = () => {
   renderSprintGuide(progress);
   renderPitch(progress);
   renderWeeks(progress);
+  renderFundamentals(progress);
   renderLabs(progress);
   renderChallenges();
   renderResources();
@@ -1538,6 +1739,9 @@ const renderAll = () => {
 
   ensureCurrentWeekId();
   openWeekDetail(Number(window.currentWeekId));
+
+  ensureCurrentFundamentalId();
+  if (window.currentFundamentalId) openFundamentalDetail(window.currentFundamentalId);
 };
 
 document.addEventListener('DOMContentLoaded', () => {

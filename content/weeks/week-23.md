@@ -31,6 +31,40 @@ Validación por entregas
 Refinamiento
 ```
 
+## Profundización técnica
+"Implementación incremental" en la teoría suena bien; en la práctica, la forma real de no romper lo que ya funciona mientras construyes la siguiente pieza es un **smoke test**: una prueba mínima, rápida, que no verifica todo el sistema a fondo, solo que "las cosas básicas no están completamente rotas":
+```javascript
+// smoke-test.mjs — correr después de cada entrega, antes de seguir construyendo
+async function smokeTest() {
+  const checks = [
+    ['El servidor responde', async () => (await fetch('http://localhost:4176/api/health')).status === 200],
+    ['La página principal carga', async () => (await fetch('http://localhost:5173/')).status === 200],
+    ['El flujo crítico no lanza error 500', async () => (await fetch('http://localhost:4176/api/pedidos')).status < 500]
+  ];
+  let fallos = 0;
+  for (const [nombre, check] of checks) {
+    const paso = await check().catch(() => false);
+    console.log(`${paso ? '✔' : '✖'} ${nombre}`);
+    if (!paso) fallos++;
+  }
+  if (fallos > 0) process.exit(1);
+}
+smokeTest();
+```
+No reemplaza una suite de tests completa (eso ya lo cubriste en la semana de testing) — su valor es ser tan rápido que lo corres *constantemente*, cada vez que entregas una pieza nueva, como primera señal de "¿rompí algo obvio?" antes de invertir tiempo en diagnosticar algo más sutil.
+
+La otra práctica real para construir incrementalmente sin dejar el proyecto en un estado roto a medias es un **feature flag**: envolver una funcionalidad nueva en una condición que puedes apagar sin revertir código:
+```javascript
+const FEATURE_FLAGS = {
+  exportarPdf: process.env.FEATURE_EXPORTAR_PDF === 'true'
+};
+
+if (FEATURE_FLAGS.exportarPdf) {
+  app.get('/api/export/pdf', exportarPdfHandler);
+}
+```
+Esto te permite integrar código nuevo al proyecto principal (en vez de dejarlo aislado en una rama que se desactualiza) incluso antes de que esté terminado — si algo falla, apagas el flag sin necesitar un rollback de código, y el resto del sistema sigue funcionando.
+
 ## Laboratorio
 Entregar una versión funcional del proyecto, aunque todavía no sea perfecta.
 

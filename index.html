@@ -38,6 +38,7 @@
         <a href="#view-mi-ruta" data-nav="view-mi-ruta">Mi ruta</a>
         <a href="#view-sesiones" data-nav="view-sesiones">Sesiones</a>
         <a href="#view-roadmap" data-nav="view-roadmap">Roadmap</a>
+        <a href="#view-fundamentos" data-nav="view-fundamentos">Fundamentos</a>
         <a href="#view-laboratorios" data-nav="view-laboratorios">Laboratorios</a>
         <a href="#view-consola" data-nav="view-consola">Consola y mentor</a>
         <a href="#view-proyectos" data-nav="view-proyectos">Proyectos</a>
@@ -172,6 +173,23 @@
           </section>
         </div>
 
+        <div class="view" id="view-fundamentos" data-view="view-fundamentos" hidden>
+          <section class="panel" id="fundamentals">
+            <div class="panel-header">
+              <h2>Fundamentos</h2>
+            </div>
+            <p class="panel-subtitle">Las 12 preguntas del diagnóstico inicial del mentor, explicadas con ejemplos reales de este mismo proyecto. Selecciona una para ver el modelo mental, su aplicación concreta y cómo verificar que la entendiste.</p>
+            <div id="fundamentalsList" class="week-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="fundamental-detail">
+            <div class="panel-header">
+              <h2>Detalle del fundamento</h2>
+            </div>
+            <div id="fundamentalDetailPanel" class="detail-panel" aria-live="polite"></div>
+          </section>
+        </div>
+
         <div class="view" id="view-laboratorios" data-view="view-laboratorios" hidden>
           <section class="panel" id="labs">
             <div class="panel-header">
@@ -179,6 +197,13 @@
             </div>
             <p class="panel-subtitle">Construye, prueba y documenta. Abre un laboratorio para consultar pasos, criterios y pistas.</p>
             <div id="labList" class="lab-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="panel" id="lab-detail">
+            <div class="panel-header">
+              <h2>Guía del laboratorio</h2>
+            </div>
+            <div id="labDetailPanel" class="detail-panel" aria-live="polite"></div>
           </section>
         </div>
 

@@ -47,6 +47,7 @@ function buildWeeks() {
       concepts: sectionToList(pick(s, 'conceptos')),
       architecture: pick(s, 'arquitectura'),
       example: pick(s, 'ejemplo'),
+      technicalDepth: pick(s, 'profundizacion tecnica'),
       labSummary: sectionToText(pick(s, 'laboratorio')),
       preparation: sectionToList(pick(s, 'preparacion')),
       steps: [pick(s, 'paso 1'), pick(s, 'paso 2'), pick(s, 'paso 3')]
@@ -244,6 +245,34 @@ function buildTerminalCommands() {
   return commands.sort((a, b) => (order[a.risk] ?? 9) - (order[b.risk] ?? 9) || a.command.localeCompare(b.command));
 }
 
+// --- Fundamentos (lecciones del diagnóstico inicial del mentor) ----------
+
+function buildFundamentals() {
+  const files = readDir('content/lessons');
+  const lessons = files
+    .filter(({ file }) => file !== 'lesson-overview.md')
+    .map(({ file, raw }) => {
+      const doc = parseDocument(raw);
+      const s = doc.sections;
+
+      return {
+        id: doc.frontmatter.id,
+        week: Number(doc.frontmatter.week),
+        order: Number(doc.frontmatter.order) || 0,
+        category: doc.frontmatter.category || 'General',
+        title: doc.frontmatter.title || doc.title,
+        question: sectionToText(pick(s, 'pregunta de diagnostico')),
+        mentalModel: pick(s, 'modelo mental'),
+        inThisProject: pick(s, 'en este proyecto'),
+        selfCheck: sectionToList(pick(s, 'para verificar que entendiste')),
+        advancedCase: pick(s, 'caso avanzado'),
+        source: `content/lessons/${file}`
+      };
+    });
+
+  return lessons.sort((a, b) => a.week - b.week || a.order - b.order);
+}
+
 // --- Main ----------------------------------------------------------------
 
 function build() {
@@ -254,6 +283,7 @@ function build() {
   const resources = buildResources();
   const { projects, finalProject } = buildProjects();
   const terminalCommands = buildTerminalCommands();
+  const fundamentals = buildFundamentals();
 
   const content = {
     generatedAt: new Date().toISOString(),
@@ -265,6 +295,7 @@ function build() {
     projects,
     finalProject,
     terminalCommands,
+    fundamentals,
     meta: {
       weeksTotal: weeks.length,
       labsFromMarkdown: labs.filter((l) => !l.pending).length,
@@ -273,7 +304,8 @@ function build() {
       challengesPending: challenges.filter((c) => c.pending).length,
       projectsTotal: projects.length,
       hasFinalProject: Boolean(finalProject),
-      terminalCommandsTotal: terminalCommands.length
+      terminalCommandsTotal: terminalCommands.length,
+      fundamentalsTotal: fundamentals.length
     }
   };
 

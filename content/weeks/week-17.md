@@ -31,6 +31,43 @@ Modelo
 Métricas y comparación
 ```
 
+## Profundización técnica
+Para evaluar algo como el Log Analyzer de este Lab con rigor (no "probé tres errores y se veía bien"), el patrón real es un **golden set**: una colección fija de casos de entrada con la salida esperada ya conocida, que se vuelve a correr cada vez que cambias el prompt o el modelo — exactamente lo mismo que hace una suite de tests automatizados con código, aplicado a IA:
+```javascript
+const goldenSet = [
+  {
+    input: "TypeError: Cannot read properties of undefined (reading 'level')",
+    esperado: { clasificacion: /tipo|type/i, menciona: /undefined/i }
+  },
+  {
+    input: 'ECONNREFUSED 127.0.0.1:5432',
+    esperado: { clasificacion: /red|conexión/i, menciona: /5432|postgres|base de datos/i }
+  }
+  // ... docenas de casos reales recolectados con el tiempo
+];
+
+async function evaluarGoldenSet(analizarLog) {
+  let aciertos = 0;
+  for (const caso of goldenSet) {
+    const resultado = await analizarLog(caso.input);
+    const pasa = caso.esperado.clasificacion.test(resultado.clasificacion)
+      && caso.esperado.menciona.test(resultado.texto);
+    if (pasa) aciertos++;
+  }
+  return { aciertos, total: goldenSet.length };
+}
+```
+Esto convierte "¿el prompt nuevo es mejor?" de una impresión subjetiva a un número comparable: corres el golden set contra el prompt viejo, contra el prompt nuevo, y comparas cuántos casos pasa cada uno — igual que comparas cobertura de tests antes y después de un cambio.
+
+Para tareas donde la respuesta correcta no es tan verificable con una expresión regular (texto libre, resúmenes, explicaciones), una técnica adicional es **LLM-as-judge**: usar un segundo modelo (o el mismo, en una llamada separada) para calificar la respuesta contra un rubric explícito:
+```text
+Califica la siguiente respuesta del 1 al 5 según estos criterios:
+- ¿Identifica correctamente la causa más probable? (1-5)
+- ¿La sugerencia de solución es accionable, no genérica? (1-5)
+No expliques tu razonamiento, responde solo con dos números separados por coma.
+```
+Esto no reemplaza al golden set determinista — lo complementa para los casos donde "correcto" es más una cuestión de calidad que de coincidencia exacta.
+
 ## Laboratorio
 Evaluar varias aproximaciones y comparar resultados con criterios objetivos.
 

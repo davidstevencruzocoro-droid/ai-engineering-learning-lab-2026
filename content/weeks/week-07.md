@@ -43,6 +43,47 @@ RUN npm install
 CMD ["npm", "run", "dev"]
 ```
 
+## Profundización técnica
+El ejemplo anterior construye una imagen funcional, pero no es como se hace en producción: copia `node_modules` dentro de la imagen final, no tiene healthcheck, y corre como root por defecto. Una versión con más criterio usa un build multi-stage:
+
+```dockerfile
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+RUN addgroup -S app && adduser -S app -G app
+COPY --from=build --chown=app:app /app/dist ./dist
+COPY --from=build --chown=app:app /app/node_modules ./node_modules
+USER app
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+CMD ["node", "dist/server.js"]
+```
+
+La primera etapa (`build`) tiene las herramientas de compilación; la segunda copia solo el resultado (`dist/` y dependencias de producción), dejando fuera compiladores y archivos fuente que no hacen falta en runtime — la imagen final es más pequeña y tiene menos superficie de ataque. `USER app` evita correr como root dentro del contenedor (si alguien lograra ejecutar código arbitrario adentro, no tendría privilegios de root del contenedor). El `HEALTHCHECK` le dice a Docker (y a Compose, y a orquestadores como Kubernetes) cómo saber si el proceso "está corriendo" pero en realidad dejó de responder — sin esto, un proceso colgado sigue contando como "Up" indefinidamente.
+
+En Compose, el healthcheck habilita algo clave: que un servicio espere a que otro esté *realmente listo*, no solo "iniciado":
+```yaml
+services:
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16-alpine
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+```
+Sin `condition: service_healthy`, `depends_on` solo garantiza orden de arranque, no que `db` ya acepte conexiones — una causa clásica de "funciona si reinicio, falla en el primer arranque".
+
 ## Laboratorio
 Containerizar frontend, backend y base de datos para que puedan arrancar juntos con un único flujo.
 

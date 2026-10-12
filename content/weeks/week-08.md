@@ -40,6 +40,38 @@ steps:
   - run: npm run build
 ```
 
+## Profundización técnica
+El ejemplo anterior es un esqueleto conceptual; un pipeline real de GitHub Actions necesita estructura completa (`name`, `on`, `jobs`) y suele cachear dependencias para no reinstalar todo en cada ejecución:
+
+```yaml
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run validate
+      - run: npm test
+      - run: npm run build
+```
+
+Detalles que marcan la diferencia entre "un YAML que corre" y uno confiable en equipo:
+- `npm ci` en vez de `npm install`: instala exactamente las versiones fijadas en `package-lock.json`, sin resolver nada de nuevo — reproducible, y falla explícitamente si el lockfile no coincide con `package.json`, en vez de silenciosamente actualizar algo.
+- `cache: 'npm'`: el runner guarda `~/.npm` entre ejecuciones, así que `npm ci` no vuelve a descargar toda la red de dependencias cada vez.
+- El trigger `pull_request` + `push: branches: [main]` corre el pipeline tanto en cada PR (antes del merge) como después del merge — así un cambio nunca llega a `main` sin haber pasado por el mismo pipeline.
+
+El patrón para que un pipeline sea más que "si falla, el repo se ve en rojo" es hacerlo bloqueante: en la configuración de protección de rama de GitHub, marcar ese job como *required status check* — así un PR literalmente no se puede fusionar si `build-and-test` no pasó, sin depender de que alguien recuerde revisarlo manualmente.
+
 ## Laboratorio
 Crear un pipeline que verifique contenido, build y pruebas antes de aceptar la entrega.
 

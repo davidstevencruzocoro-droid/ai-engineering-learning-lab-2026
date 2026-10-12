@@ -31,6 +31,39 @@ Acción en servicio externo
 Resultado y registro
 ```
 
+## Profundización técnica
+Un workflow de n8n se exporta como JSON — entender esa estructura es lo que te permite versionarlo en Git, revisarlo en un PR, y no depender solo de capturas de pantalla como evidencia:
+```json
+{
+  "name": "Notificar pedido nuevo",
+  "nodes": [
+    { "name": "Webhook", "type": "n8n-nodes-base.webhook",
+      "parameters": { "path": "pedido-nuevo", "httpMethod": "POST" } },
+    { "name": "Validar payload", "type": "n8n-nodes-base.if",
+      "parameters": { "conditions": { "string": [{ "value1": "={{$json.total}}", "operation": "notEmpty" }] } } },
+    { "name": "Enviar notificación", "type": "n8n-nodes-base.slack" }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Validar payload" }]] },
+    "Validar payload": { "main": [[{ "node": "Enviar notificación" }]] }
+  }
+}
+```
+El nodo `IF` ("Validar payload") es la diferencia entre un workflow de demo y uno confiable: sin él, un payload malformado del webhook sigue avanzando por el flujo y falla en un nodo posterior con un error menos claro.
+
+El riesgo de seguridad real de cualquier webhook público (n8n, Stripe, GitHub, lo que sea) es que la URL del endpoint, por diseño, es pública — cualquiera que la descubra puede enviarle un payload falso haciéndose pasar por el servicio real. La mitigación estándar es verificar una firma criptográfica que el servicio emisor incluye en cada petición:
+```javascript
+const crypto = require('crypto');
+function verificarFirmaWebhook(payload, firmaRecibida, secreto) {
+  const firmaCalculada = crypto
+    .createHmac('sha256', secreto)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(firmaCalculada), Buffer.from(firmaRecibida));
+}
+```
+Esto calcula un HMAC (hash con clave secreta compartida) del cuerpo real de la petición y lo compara con el que el servicio emisor envió en una cabecera — si no coinciden, el payload fue modificado o no viene de quien dice venir, y el flujo debe rechazarlo antes de ejecutar ninguna acción. Nota que la comparación usa `crypto.timingSafeEqual`, no `===` — la razón exacta está en la lección de Fundamentos sobre variables de entorno y secretos.
+
 ## Laboratorio
 Crear un flujo básico que reciba un evento, procese datos y active una acción en un servicio externo.
 

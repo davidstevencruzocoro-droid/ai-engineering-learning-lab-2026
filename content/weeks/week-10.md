@@ -32,6 +32,40 @@ Validación + auth + policy
 Datos y servicios externos
 ```
 
+## Profundización técnica
+Tres implementaciones concretas que separan "sé lo que es seguridad" de "sé construirla":
+
+**Contraseñas — nunca `===`, nunca sin salt.** Comparar contraseñas en texto plano o con un hash sin salt (como MD5 directo) es vulnerable a tablas rainbow. La forma correcta usa un algoritmo diseñado para ser lento a propósito:
+```javascript
+const bcrypt = require('bcrypt');
+const hash = await bcrypt.hash(plainPassword, 12); // 12 = cost factor
+const matches = await bcrypt.compare(plainPassword, hash);
+```
+El "cost factor" (12) controla cuánto tarda el hash — a propósito lento, para que probar millones de contraseñas por segundo (fuerza bruta) sea económicamente inviable, aunque para un solo login la demora sea imperceptible.
+
+**SQL — parametrizar, nunca concatenar.** Esta es la diferencia entre código seguro y una inyección SQL de libro de texto:
+```javascript
+// VULNERABLE: el input del usuario se concatena directo al SQL
+db.query(`SELECT * FROM users WHERE email = '${email}'`);
+// Un email malicioso: ' OR '1'='1 devuelve TODOS los usuarios
+
+// SEGURO: el driver trata el valor como dato, nunca como código SQL
+db.query('SELECT * FROM users WHERE email = ?', [email]);
+```
+El placeholder (`?` o `$1` según el driver) hace que la base de datos reciba el valor por un canal separado del texto de la consulta — no importa qué caracteres especiales traiga `email`, nunca se interpretan como SQL.
+
+**Rate limiting — limitar intentos, no solo validar credenciales.** Sin límite de intentos, un endpoint de login es vulnerable a fuerza bruta aunque las contraseñas estén bien hasheadas:
+```javascript
+const attempts = new Map(); // en producción: Redis, no memoria del proceso
+function checkLoginAttempts(ip) {
+  const record = attempts.get(ip) || { count: 0, resetAt: Date.now() + 60_000 };
+  if (Date.now() > record.resetAt) { record.count = 0; record.resetAt = Date.now() + 60_000; }
+  record.count += 1;
+  attempts.set(ip, record);
+  return record.count <= 5; // máximo 5 intentos por minuto
+}
+```
+
 ## Laboratorio
 Revisar un servicio con fallos comunes y corregir la causa raíz en lugar de aplicar soluciones superficiales.
 

@@ -11,6 +11,7 @@ import {
   toggleWeek,
   toggleLab,
   toggleObjective,
+  toggleFundamental,
   defaultProgress
 } from '../../app/js/progress.js';
 
@@ -126,6 +127,17 @@ test('el seguimiento de proyectos se guarda independientemente del XP y valida e
   assert.deepEqual(defaultProgress.projectStatuses, {});
   assert.throws(() => setProjectStatus(started, 'project-01', 'unknown'), /Estado de proyecto inválido/);
   assert.throws(() => setProjectStatus(started, '', 'completed'), /identificador del proyecto es obligatorio/);
+});
+
+test('toggleFundamental alterna un fundamento sin afectar el XP', () => {
+  const marked = toggleFundamental(defaultProgress, 'fundamento-01');
+  assert.deepEqual(marked.completedFundamentals, ['fundamento-01']);
+  assert.equal(marked.xp, defaultProgress.xp);
+  assert.deepEqual(defaultProgress.completedFundamentals, []);
+
+  const unmarked = toggleFundamental(marked, 'fundamento-01');
+  assert.deepEqual(unmarked.completedFundamentals, []);
+  assert.throws(() => toggleFundamental(marked, ''), /identificador del fundamento es obligatorio/);
 });
 
 test('el checklist de empleo alterna elementos de forma inmutable y sin XP', () => {

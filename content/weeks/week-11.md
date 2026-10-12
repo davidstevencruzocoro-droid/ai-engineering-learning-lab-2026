@@ -29,6 +29,42 @@ API / cliente / adapter
 Sistema 2
 ```
 
+## Profundización técnica
+Dos patrones reales que separan una integración "que funciona en la demo" de una que sobrevive en producción.
+
+**Reintentos con backoff exponencial, no reintentos inmediatos.** Si un servicio externo falla porque está sobrecargado, reintentar inmediatamente (y muchas veces) empeora la sobrecarga. El patrón correcto espera cada vez más entre intentos:
+```javascript
+async function fetchWithRetry(url, options, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      if (response.ok) return response;
+      if (response.status < 500) return response; // 4xx no se arregla reintentando
+    } catch (error) {
+      clearTimeout(timeout);
+      if (attempt === maxRetries) throw error;
+    }
+    const delay = Math.min(1000 * 2 ** attempt, 10_000);
+    await new Promise((r) => setTimeout(r, delay));
+  }
+}
+```
+`AbortController` con `setTimeout` evita quedarte esperando indefinidamente si el servicio externo nunca responde. El backoff (`1000 * 2 ** attempt`) espera 1s, 2s, 4s, 8s — dando tiempo a que el servicio externo se recupere, en vez de machacarlo. Un error `4xx` (problema con tu petición) se devuelve de inmediato porque reintentar lo mismo no va a cambiar el resultado — solo los `5xx` (problema del lado del servidor externo) justifican reintentar.
+
+**Idempotency keys — evitar duplicar un efecto al reintentar.** Si tu reintento es sobre una operación que *cambia estado* (crear un pedido, cobrar un pago), reintentar a ciegas puede duplicar el efecto si la primera llamada sí tuvo éxito pero la respuesta se perdió en la red. La solución real (usada por APIs como la de Stripe) es enviar una clave única por operación lógica:
+```javascript
+const idempotencyKey = `order-${orderId}-${userId}`;
+await fetch('https://api.proveedor.com/charges', {
+  method: 'POST',
+  headers: { 'Idempotency-Key': idempotencyKey },
+  body: JSON.stringify(payload)
+});
+```
+El servicio externo recuerda esa clave: si la misma clave llega dos veces, devuelve el resultado de la primera ejecución sin repetir el efecto — el reintento se vuelve seguro incluso para operaciones que cuestan dinero.
+
 ## Laboratorio
 Crear una integración con una API externa y capturar los fallos más habituales del mundo real.
 

@@ -43,10 +43,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('las pistas respetan la recompensa, se conserva el estado y el XP al recargar', async ({ page }) => {
+  await page.locator('[data-nav="view-laboratorios"]').click();
   const labCard = page.locator('.lab-card').first();
   await labCard.locator('[data-open-lab]').click();
 
-  const detail = page.locator('#detailPanel');
+  const detail = page.locator('#labDetailPanel');
   const expectedRewards = [
     'XP al completar: 23/25 (90%)',
     'XP al completar: 19/25 (75%)',
@@ -64,17 +65,20 @@ test('las pistas respetan la recompensa, se conserva el estado y el XP al recarg
   await expect(page.locator('#xpValue')).toHaveText('10');
   await page.reload();
   await expect(page.locator('#xpValue')).toHaveText('10');
+  await page.locator('[data-nav="view-laboratorios"]').click();
   await page.locator('.lab-card').first().locator('[data-open-lab]').click();
-  await expect(page.locator('#detailPanel')).toContainText('Ayuda máxima revelada: etapa 4 de 4.');
+  await expect(page.locator('#labDetailPanel')).toContainText('Ayuda máxima revelada: etapa 4 de 4.');
 });
 
 test('completar un laboratorio sin consultar ayuda conserva todo el XP', async ({ page }) => {
+  await page.locator('[data-nav="view-laboratorios"]').click();
   await page.locator('.lab-card').first().getByRole('button', { name: 'Marcar como hecho' }).click();
   await expect(page.locator('#xpValue')).toHaveText('25');
   await expect(page.locator('#labsCompleted')).toHaveText('1');
 });
 
 test('el estado de proyecto y el checklist laboral persisten sin alterar el XP', async ({ page }) => {
+  await page.locator('[data-nav="view-proyectos"]').click();
   const project = page.locator('[data-project-id="project-01"]');
   await expect(page.locator('.project-card')).toHaveCount(7);
   await expect(project).toContainText('Semanas del proyecto pendientes');
@@ -84,6 +88,7 @@ test('el estado de proyecto y el checklist laboral persisten sin alterar el XP',
 
   await page.locator('[data-project-status="project-01"]').selectOption('in-progress');
   await expect(project.locator('.project-status-label')).toHaveText('En progreso');
+  await page.locator('[data-nav="view-entrenamiento"]').click();
   await page.locator('[data-career-item="career-project"]').check();
   await expect(page.locator('#xpValue')).toHaveText('0');
   await expect(page.locator('.career-checklist-summary')).toHaveText('1/8 elementos listos');
@@ -96,6 +101,7 @@ test('el estado de proyecto y el checklist laboral persisten sin alterar el XP',
 
 test('las guías de entrenamiento están disponibles sin provocar overflow móvil', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('[data-nav="view-entrenamiento"]').click();
   await expect(page.getByRole('heading', { name: 'Modo sin IA' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'AI as Mentor' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Modo entrevista' })).toBeVisible();
@@ -133,6 +139,7 @@ test('Terminal Coach exige una predicción antes de ejecutar y compara el result
     });
   });
 
+  await page.locator('[data-nav="view-consola"]').click();
   const runButton = page.locator('#coachRunBtn');
   await expect(runButton).toBeDisabled();
   await page.locator('#coachPrediction').fill('Espero Git 2.x');
@@ -161,6 +168,7 @@ test('el runner presenta el lenguaje y la salida como texto, sin evaluar respues
     });
   });
   await page.reload();
+  await page.locator('[data-nav="view-consola"]').click();
   await expect(page.locator('#runCodeBtn')).toBeEnabled();
   await page.locator('#runnerSource').fill('console.log("ok")');
   await page.locator('#runCodeBtn').click();
@@ -189,6 +197,7 @@ test('el mentor es conversacional, solo recibe código y salida con consentimien
     await route.fulfill({ json: { answer: '<img src=x onerror=alert(1)> Prueba el alcance de la variable.' } });
   });
   await page.reload();
+  await page.locator('[data-nav="view-consola"]').click();
   await expect(page.locator('#askMentorBtn')).toBeEnabled();
 
   await page.locator('#runnerSource').fill('console.log(value)');
@@ -209,12 +218,14 @@ test('el mentor es conversacional, solo recibe código y salida con consentimien
 });
 
 test('la interfaz explica cómo activar el backend cuando no está disponible', async ({ page }) => {
+  await page.locator('[data-nav="view-consola"]').click();
   await expect(page.locator('#labEnvironmentStatus')).toContainText('npm run lab:server');
   await expect(page.locator('#runCodeBtn')).toBeDisabled();
   await expect(page.locator('#askMentorBtn')).toBeDisabled();
 });
 
 test('el inventario local muestra herramientas y contexto detectados como texto', async ({ page }) => {
+  await page.locator('[data-nav="view-consola"]').click();
   await page.locator('#environmentDetails summary').click();
   await expect(page.locator('#environmentInventoryOutput')).toContainText('Windows 10.0.26300');
   await expect(page.locator('#environmentInventoryOutput')).toContainText('Terminal: PowerShell 5.1.26100.9549');
@@ -223,4 +234,18 @@ test('el inventario local muestra herramientas y contexto detectados como texto'
   await expect(page.locator('#environmentInventoryOutput')).toContainText('learning-db');
   await expect(page.locator('#environmentInventoryOutput')).toContainText('Ubuntu-24.04');
   await expect(page.locator('#environmentInventoryOutput script')).toHaveCount(0);
+});
+
+test('buscar contenido no rompe la navegación entre vistas (regresión: el filtro de tarjetas de Fundamentos rompía el router)', async ({ page }) => {
+  await page.locator('#searchInput').fill('docker');
+  await expect(page.locator('#view-mi-ruta')).toBeVisible();
+
+  await page.locator('[data-nav="view-fundamentos"]').click();
+  await expect(page.locator('#fundamentalsList .week-card').first()).toBeVisible();
+
+  await page.locator('#searchInput').fill('');
+  await page.locator('[data-nav="view-laboratorios"]').click();
+  await expect(page.locator('#view-laboratorios')).toBeVisible();
+  await expect(page.locator('#view-fundamentos')).toBeHidden();
+  await expect(page.locator('.lab-card').first()).toBeVisible();
 });

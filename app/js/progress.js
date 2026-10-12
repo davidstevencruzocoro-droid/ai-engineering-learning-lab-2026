@@ -9,6 +9,7 @@ export const defaultProgress = {
   completedWeeks: [],
   completedLabs: [],
   completedObjectives: [],
+  completedFundamentals: [],
   labHelpLevels: {},
   projectStatuses: {},
   completedCareerItems: [],
@@ -133,6 +134,17 @@ export function getWeakAreas(progress) {
 export function getMasteredExercises(progress) {
   const attempts = Object.values(progress.gradingAttempts || {});
   return attempts.filter((attempt) => attempt.resolved);
+}
+
+export function toggleFundamental(progress, fundamentalId) {
+  if (typeof fundamentalId !== 'string' || fundamentalId.length === 0) {
+    throw new TypeError('El identificador del fundamento es obligatorio.');
+  }
+  const completed = progress.completedFundamentals.includes(fundamentalId);
+  const completedFundamentals = completed
+    ? progress.completedFundamentals.filter((id) => id !== fundamentalId)
+    : [...progress.completedFundamentals, fundamentalId];
+  return { ...progress, completedFundamentals };
 }
 
 export function toggleCareerItem(progress, itemId) {

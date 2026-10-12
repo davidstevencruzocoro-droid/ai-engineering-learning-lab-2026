@@ -31,6 +31,33 @@ Trazas y métricas
 Decisiones de mejora
 ```
 
+## Profundización técnica
+Este Lab ya versiona sus prompts de producción de la forma más simple y más efectiva que existe: como código, dentro de Git. `MENTOR_SYSTEM_PROMPT` y `LOG_ANALYZER_SYSTEM_PROMPT` viven como constantes en `server/index.mjs` — cualquier cambio a esos prompts pasa por `git diff`, un commit con mensaje explicando el *por qué*, y (si algo sale mal) un `git revert` tan simple como el de cualquier otro bug de código. Eso ya es mejor LLMOps que editar un prompt "en caliente" en un panel de administración sin historial.
+
+Lo que le falta a este Lab hoy — y lo que un sistema LLMOps maduro añade encima de solo versionar el texto — es trazabilidad de **cada ejecución**, no solo del prompt. El patrón real es asignar un identificador único a cada llamada y registrar todo lo relevante junto:
+```javascript
+async function callOllamaConTraza(systemPrompt, messages, options) {
+  const trazaId = randomUUID();
+  const inicio = Date.now();
+  try {
+    const respuesta = await callOllama(systemPrompt, messages, options);
+    registrarTraza({
+      trazaId,
+      promptVersion: 'mentor-v3', // referencia al commit o tag que introdujo este prompt
+      modelo: OLLAMA_MODEL,
+      duracionMs: Date.now() - inicio,
+      tokensEntrada: estimarTokens(messages),
+      exito: true
+    });
+    return respuesta;
+  } catch (error) {
+    registrarTraza({ trazaId, promptVersion: 'mentor-v3', duracionMs: Date.now() - inicio, exito: false, error: error.message });
+    throw error;
+  }
+}
+```
+Con esto acumulado a lo largo del tiempo, "¿el prompt nuevo empeoró la latencia?" o "¿qué porcentaje de llamadas falla desde el cambio de ayer?" dejan de ser preguntas que requieren adivinar — son una consulta sobre datos reales. Esa es la diferencia entre "tengo un prompt que funciona" y "opero un sistema de IA con la misma disciplina que cualquier servicio en producción".
+
 ## Laboratorio
 Crear un flujo de observación básico para respuesta, coste y errores.
 

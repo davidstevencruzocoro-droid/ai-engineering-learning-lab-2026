@@ -486,6 +486,15 @@ textarea {
   width: fit-content;
 }
 
+.study-mode-focus {
+  border: 1px solid var(--accent);
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.study-mode-focus h3 {
+  color: var(--accent);
+}
+
 .objective-grid,
 .milestone-grid,
 .deliverable-grid {
@@ -1231,6 +1240,32 @@ textarea {
 
 .terminal-command-card details {
   margin-top: 10px;
+}
+
+.advanced-case {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.advanced-case summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.advanced-case pre {
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(11, 16, 32, 0.76);
+  color: var(--text);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.82rem;
+  overflow-x: auto;
 }
 
 .terminal-command-card summary {

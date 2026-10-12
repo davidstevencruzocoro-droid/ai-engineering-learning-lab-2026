@@ -78,6 +78,43 @@ function codeOrText(label, raw) {
   }
 }
 
+// Como codeOrText pero para secciones que mezclan prosa, listas y bloques de código
+// embebidos (las lecciones de Fundamentos), en vez de ser un único bloque de código.
+function markdownBlock(label, raw) {
+  if (!raw) return;
+  if (label) subheading(label);
+
+  const codeBlocks = [];
+  const withPlaceholders = raw.replace(/```[a-z]*\r?\n([\s\S]*?)```/g, (_, code) => {
+    codeBlocks.push(code.replace(/\r?\n$/, ''));
+    // Ver la nota equivalente en app.js: aísla el placeholder en su propio bloque
+    // aunque el Markdown fuente no traiga línea en blanco alrededor del ```.
+    return `\n\n@@CODEBLOCK${codeBlocks.length - 1}@@\n\n`;
+  });
+
+  const blocks = withPlaceholders.split(/\r?\n\s*\r?\n/).map((b) => b.trim()).filter(Boolean);
+  for (const block of blocks) {
+    const placeholderMatch = block.match(/^@@CODEBLOCK(\d+)@@$/);
+    if (placeholderMatch) {
+      doc.font('Courier').fontSize(9).fillColor('#0f172a');
+      for (const line of codeBlocks[Number(placeholderMatch[1])].split(/\r?\n/)) doc.text(line);
+      doc.font('Helvetica').fontSize(10).fillColor('#1f2933');
+      doc.moveDown(0.3);
+      continue;
+    }
+
+    const lines = block.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const stripMarkup = (text) => text.replace(/\*\*/g, '').replace(/`/g, '');
+    if (lines.length > 0 && lines.every((l) => l.startsWith('- '))) {
+      bulletList(lines.map((l) => stripMarkup(l.slice(2))));
+    } else if (lines.length > 0 && lines.every((l) => /^\d+\.\s/.test(l))) {
+      bulletList(lines.map((l) => stripMarkup(l.replace(/^\d+\.\s*/, ''))));
+    } else {
+      paragraph(stripMarkup(lines.join(' ')));
+    }
+  }
+}
+
 function ensureSpace(minHeight) {
   const bottom = doc.page.height - doc.page.margins.bottom;
   if (doc.y + minHeight > bottom) {
@@ -175,6 +212,7 @@ for (const week of content.weeks) {
 
   if (week.architecture) codeOrText('Arquitectura', week.architecture);
   if (week.example) codeOrText('Ejemplo', week.example);
+  if (week.technicalDepth) markdownBlock('Profundización técnica', week.technicalDepth);
 
   subheading('Laboratorio de la semana');
   paragraph(week.labSummary);
@@ -225,6 +263,32 @@ for (const week of content.weeks) {
 
   subheading('Criterio de aprobación');
   paragraph(week.approvalCriteria);
+}
+
+// --- Fundamentos (lecciones del diagnóstico inicial del mentor) ------------
+
+newPage();
+addTocEntry('Fundamentos');
+heading('Fundamentos');
+paragraph('Las 12 preguntas del diagnóstico inicial del mentor, explicadas con ejemplos reales de este mismo proyecto: qué pasa, por qué pasa, y cómo verificarlo tú mismo.');
+
+for (const lesson of content.fundamentals) {
+  newPage();
+  addTocEntry(`Fundamento — ${lesson.title}`, 1);
+  heading(`Semana ${lesson.week} — ${lesson.title}`, 16);
+
+  subheading('Pregunta de diagnóstico');
+  paragraph(lesson.question);
+
+  markdownBlock('Modelo mental', lesson.mentalModel);
+  markdownBlock('En este proyecto', lesson.inThisProject);
+
+  if (lesson.selfCheck.length) {
+    subheading('Para verificar que entendiste');
+    bulletList(lesson.selfCheck);
+  }
+
+  markdownBlock('Caso avanzado', lesson.advancedCase);
 }
 
 // --- Laboratorios ----------------------------------------------------------

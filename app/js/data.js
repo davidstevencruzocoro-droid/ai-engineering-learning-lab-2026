@@ -171,7 +171,8 @@ export const weekDetails = generatedContent.weeks.map((week) => ({
   challenge: week.challenge,
   breakSystem: week.breakSystem,
   recovery: week.recovery,
-  evidence: week.evidence
+  evidence: week.evidence,
+  technicalDepth: week.technicalDepth
 }));
 
 export const labDetails = generatedContent.labs.map((lab) => ({
@@ -224,4 +225,17 @@ export const terminalCommands = generatedContent.terminalCommands.map((cmd) => (
   exercise: cmd.exercise,
   commonError: cmd.commonError,
   recovery: cmd.recovery
+}));
+
+export const fundamentals = generatedContent.fundamentals.map((lesson) => ({
+  id: lesson.id,
+  week: lesson.week,
+  order: lesson.order,
+  category: lesson.category,
+  title: lesson.title,
+  question: lesson.question,
+  mentalModel: lesson.mentalModel,
+  inThisProject: lesson.inThisProject,
+  selfCheck: lesson.selfCheck,
+  advancedCase: lesson.advancedCase
 }));

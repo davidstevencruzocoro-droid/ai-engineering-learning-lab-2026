@@ -39,6 +39,42 @@ chmod +x script.sh
 sudo systemctl status nginx
 ```
 
+## Profundización técnica
+`sudo systemctl status nginx` te dice si un servicio está corriendo, pero no es así como se mantiene un servicio propio corriendo de forma confiable en un servidor Linux real. Un *unit file* de systemd define cómo arrancar, reiniciar y limitar un proceso tuyo como si fuera un servicio del sistema operativo:
+
+```ini
+# /etc/systemd/system/mi-api.service
+[Unit]
+Description=Mi API Node.js
+After=network.target
+
+[Service]
+Type=simple
+User=appuser
+WorkingDirectory=/opt/mi-api
+ExecStart=/usr/bin/node /opt/mi-api/server.js
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/opt/mi-api/.env
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`User=appuser` evita correr el proceso como root. `Restart=on-failure` + `RestartSec=5` hace que systemd reinicie el proceso solo si murió por un error (no si lo detuviste tú a propósito), esperando 5 segundos — sin esto, un crash a las 3am se queda caído hasta que alguien lo note. `NoNewPrivileges=true` impide que el proceso escale privilegios aunque algo dentro de él lo intente.
+
+Comandos reales para operarlo:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now mi-api
+sudo systemctl status mi-api
+journalctl -u mi-api -f --since "10 min ago"
+```
+`journalctl -u mi-api -f` es el equivalente real a "ver los logs del contenedor" pero para un servicio systemd — sin esto, diagnosticar por qué un servicio se reinició a medianoche es adivinar a ciegas.
+
+Sobre permisos (`chmod +x script.sh` del ejemplo anterior): el error más común en servidores reales no es olvidar el `+x`, es usar `chmod -R 777` para "que funcione de una vez" — eso da permiso de escritura y ejecución a cualquier usuario del sistema sobre esos archivos, incluyendo procesos comprometidos de otras aplicaciones. El principio correcto es el mínimo permiso necesario: `750` o `640` según si el archivo necesita ejecutarse, y nunca escritura para "otros" en archivos de un servicio expuesto a red.
+
 ## Laboratorio
 Desplegar una aplicación en un entorno basado en Linux o nube y documentar el procedimiento completo.
 

@@ -82,6 +82,10 @@ for (const week of content.weeks) {
       errors.push(`Semana ${week.id} (${week.source}): falta la sección "${field}".`);
     }
   }
+
+  if (week.level >= 3 && !week.technicalDepth) {
+    errors.push(`Semana ${week.id} (${week.source}): falta la sección "Profundización técnica" (obligatoria desde nivel 3).`);
+  }
 }
 for (let id = 1; id <= 24; id++) {
   if (!seenWeekIds.has(id)) {
@@ -179,6 +183,22 @@ if (content.terminalCommands.length === 0) {
   errors.push('No hay comandos definidos en content/terminal/ (Terminal Tutor vacío).');
 }
 
+const seenFundamentalIds = new Set();
+for (const lesson of content.fundamentals) {
+  if (seenFundamentalIds.has(lesson.id)) errors.push(`Fundamento duplicado: ${lesson.id}`);
+  seenFundamentalIds.add(lesson.id);
+  if (!lesson.id) errors.push(`Fundamento (${lesson.source}): falta "id" en el frontmatter.`);
+  if (Number.isNaN(lesson.week) || lesson.week < 1) errors.push(`Fundamento ${lesson.id} (${lesson.source}): falta "week" válido en el frontmatter.`);
+  if (!lesson.question) errors.push(`Fundamento ${lesson.id} (${lesson.source}): falta "Pregunta de diagnóstico".`);
+  if (!lesson.mentalModel) errors.push(`Fundamento ${lesson.id} (${lesson.source}): falta "Modelo mental".`);
+  if (!lesson.inThisProject) errors.push(`Fundamento ${lesson.id} (${lesson.source}): falta "En este proyecto".`);
+  if (lesson.selfCheck.length === 0) errors.push(`Fundamento ${lesson.id} (${lesson.source}): falta lista de "Para verificar que entendiste".`);
+  if (!lesson.advancedCase) errors.push(`Fundamento ${lesson.id} (${lesson.source}): falta "Caso avanzado".`);
+}
+if (content.fundamentals.length === 0) {
+  errors.push('No hay lecciones definidas en content/lessons/ (Fundamentos vacío).');
+}
+
 // --- Reporte ---------------------------------------------------------------
 
 console.log('--- Resumen de contenido ---');
@@ -187,6 +207,7 @@ console.log(`Labs: ${content.meta.labsFromMarkdown}/24 desde Markdown, ${content
 console.log(`Retos: ${content.meta.challengesFromMarkdown} desde Markdown, ${content.meta.challengesPending} en fallback (Fase B)`);
 console.log(`Proyectos acumulativos: ${content.meta.projectsTotal}/6, proyecto final: ${content.meta.hasFinalProject ? 'OK' : 'FALTA'}`);
 console.log(`Terminal Tutor: ${content.meta.terminalCommandsTotal} comandos`);
+console.log(`Fundamentos: ${content.meta.fundamentalsTotal} lecciones`);
 console.log(`Glosario: ${content.glossary.length} términos`);
 console.log(`Recursos: ${content.resources.length} enlaces`);
 
